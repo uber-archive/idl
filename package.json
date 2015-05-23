@@ -1,0 +1,50 @@
+{
+  "name": "thrift-god",
+  "version": "1.0.0",
+  "description": "A god repository for all your thrifts",
+  "keywords": [],
+  "author": "Raynos <raynos2@gmail.com>",
+  "repository": "git://github.com/Raynos/thrift-god.git",
+  "main": "index",
+  "homepage": "https://github.com/Raynos/thrift-god",
+  "bugs": {
+    "url": "https://github.com/Raynos/thrift-god/issues",
+    "email": "raynos2@gmail.com"
+  },
+  "contributors": [
+    {
+      "name": "Raynos"
+    }
+  ],
+  "dependencies": {
+    "uber-standard": "3.6.4"
+  },
+  "devDependencies": {
+    "istanbul": "^0.3.5",
+    "opn": "^1.0.1",
+    "tape": "^3.4.0"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/Raynos/thrift-god/raw/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "test": "npm run jshint -s && npm run cover -s",
+    "unit-test": "node test/index.js",
+    "jshint": "standard -v",
+    "cover": "istanbul cover --report html --print detail -- test/index.js && npm run check-cover -s",
+    "check-cover": "istanbul check-coverage --branches=100 --lines=100 --functions=100",
+    "view-cover": "opn ./coverage/index.html",
+    "travis": "npm run cover -s && istanbul report lcov && ((cat coverage/lcov.info | coveralls) || exit 0)"
+  },
+  "engine": {
+    "node": ">= 0.8.x"
+  },
+  "pre-commit": [
+    "test"
+  ],
+  "pre-commit.silent": true,
+  "ngen-version": "5.1.0"
+}
