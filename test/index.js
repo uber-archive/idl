@@ -20,11 +20,14 @@
 
 'use strict';
 
-var test = require('tape');
+var TestCluster = require('./lib/test-cluster.js');
 
-var thriftGod = require('../index.js');
+TestCluster.test('first test', {
+    config: {}
+}, function t(cluster, assert) {
+    console.log('??', !!cluster);
 
-test('thriftGod is a function', function t(assert) {
-    assert.equal(typeof thriftGod, 'function');
-    assert.end();
+    setInterval(function loop() {
+
+    }, 1000);
 });

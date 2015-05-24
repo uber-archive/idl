@@ -17,12 +17,21 @@
     }
   ],
   "dependencies": {
-    "uber-standard": "3.6.4"
+    "debug-logtron": "4.0.0",
+    "minimist": "1.1.1",
+    "process": "0.11.1",
+    "rimraf": "2.3.4"
   },
   "devDependencies": {
+    "fixtures-fs": "2.0.0",
     "istanbul": "^0.3.5",
+    "mkdirp": "0.5.1",
     "opn": "^1.0.1",
-    "tape": "^3.4.0"
+    "rimraf": "2.3.4",
+    "run-parallel": "1.1.1",
+    "run-series": "1.1.1",
+    "tape": "^3.4.0",
+    "uber-standard": "3.6.4"
   },
   "licenses": [
     {
