@@ -31,6 +31,7 @@
     "run-parallel": "1.1.1",
     "run-series": "1.1.1",
     "tape": "^3.4.0",
+    "tape-cluster": "2.0.0",
     "uber-standard": "3.6.4"
   },
   "licenses": [
