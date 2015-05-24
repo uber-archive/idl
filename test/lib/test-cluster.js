@@ -10,8 +10,8 @@ var createFixtures = require('fixtures-fs/create-fixtures');
 var teardownFixtures = require('fixtures-fs/teardown-fixtures');
 var rimraf = require('rimraf');
 var mkdirp = require('mkdirp');
+var wrapCluster = require('tape-cluster');
 
-var wrapCluster = require('./wrap-cluster.js');
 var ThriftGod = require('../../bin/thrift-god.js');
 
 var defaultRepos = {
