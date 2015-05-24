@@ -1,0 +1,5 @@
+{
+    "rules": {
+        "max-statements": [2, 25]
+    }
+}
