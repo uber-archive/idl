@@ -160,9 +160,6 @@ TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
         exec.bind(null, 'git init', {
             cwd: self.upstreamDir
         }),
-        exec.bind(null, 'git add --all', {
-            cwd: self.upstreamDir
-        }),
         exec.bind(null, 'git commit --allow-empty -am "initial"', {
             cwd: self.upstreamDir
         }),
@@ -190,7 +187,53 @@ function setupThriftGod(cb) {
     self.thriftGod.bootstrap(cb);
 };
 
-TestCluster.prototype.destroy = function destroy(cb) {
+TestCluster.prototype.gitlog = function gitlog(cb) {
+    var self = this;
+
+    var command = 'git log --pretty="%s"';
+    exec(command, {
+        cwd: self.upstreamDir
+    }, cb);
+};
+
+TestCluster.prototype.gitshow = function gitshow(file, cb) {
+    var self = this;
+
+    var command = 'git show HEAD:' + file;
+    exec(command, {
+        cwd: self.upstreamDir
+    }, cb);
+};
+
+TestCluster.prototype.inspectUpstream =
+function inspectUpstream(callback) {
+    var self = this;
+
+    var keys = Object.keys(self.remoteRepos);
+    var remoteTasks = keys.reduce(function b(acc, key) {
+        acc[key] = self.gitshow.bind(self, 'thrift/' + key + '.thrift');
+        return acc;
+    }, {});
+
+    parallel({
+        gitlog: self.gitlog.bind(self),
+        meta: function thunk(cb) {
+            self.gitshow('meta.json', onFile);
+
+            function onFile(err, file) {
+                if (err) {
+                    return cb(err);
+                }
+
+                cb(null, JSON.parse(file));
+            }
+        },
+        thrift: self.gitshow.bind(self, 'thrift'),
+        remotes: parallel.bind(null, remoteTasks)
+    }, callback);
+};
+
+TestCluster.prototype.close = function close(cb) {
     var self = this;
 
     rimraf(self.fixturesDir, cb);
