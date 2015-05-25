@@ -7,10 +7,10 @@ var series = require('run-series');
 var parallel = require('run-parallel');
 var exec = require('child_process').exec;
 var createFixtures = require('fixtures-fs/create-fixtures');
-var teardownFixtures = require('fixtures-fs/teardown-fixtures');
 var rimraf = require('rimraf');
 var mkdirp = require('mkdirp');
 var wrapCluster = require('tape-cluster');
+var extend = require('xtend');
 
 var ThriftGod = require('../../bin/thrift-god.js');
 
@@ -62,29 +62,28 @@ function TestCluster(opts) {
 
     var self = this;
 
-    self.remotes = opts.remotes || defaultRepos;
+    self.remoteRepos = opts.remoteRepos || defaultRepos;
     self.fixturesDir = path.join(__dirname, '..', 'fixtures');
     self.remotesDir = path.join(self.fixturesDir, 'remotes');
     self.upstreamDir = path.join(self.fixturesDir, 'upstream');
     self.repositoryDir = path.join(self.fixturesDir, 'repository');
     self.configFile = path.join(self.fixturesDir, 'config.json');
+    self.cacheDir = path.join(self.fixturesDir, 'remote-cache');
 
-    self.config = opts.config || {};
-    if (!self.config.upstream) {
-        self.config.upstream = 'file://' + self.upstreamDir;
-    }
-    if (!self.config.remotes) {
-        var keys = Object.keys(self.remotes);
-        self.config.remotes = [];
-        for (var i = 0; i < keys.length; i++) {
-            self.config.remotes[i] = 'file://' + path.join(
-                self.remotesDir, keys[i]
-            );
-        }
-    }
-    if (!self.config.repositoryFolder) {
-        self.config.repositoryFolder = self.repositoryDir;
-    }
+    self.config = extend({
+        upstream: 'file://' + self.upstreamDir,
+        repositoryFolder: self.repositoryDir,
+        fileNameStrategy: 'lastSegment',
+        cacheLocation: self.cacheDir,
+        remotes: Object.keys(self.remoteRepos)
+            .map(function buildRepoObj(remoteName) {
+                return {
+                    repository: 'file://' + path.join(
+                        self.remotesDir, remoteName
+                    )
+                };
+            })
+    }, opts.config || {});
 
     self.thriftGod = null;
 }
@@ -96,7 +95,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
         createFixtures.bind(
-            null, self.remotesDir, self.remotes
+            null, self.remotesDir, self.remoteRepos
         ),
         self.gitify.bind(self),
         self.setupUpstream.bind(self),
@@ -111,7 +110,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
 TestCluster.prototype.gitify = function gitify(cb) {
     var self = this;
 
-    var keys = Object.keys(self.remotes);
+    var keys = Object.keys(self.remoteRepos);
     var tasks = keys.map(function buildThunk(remoteKey) {
         var cwd = path.join(self.remotesDir, remoteKey);
 
@@ -146,6 +145,9 @@ TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
         }),
         exec.bind(null, 'git commit --allow-empty -am "initial"', {
             cwd: self.upstreamDir
+        }),
+        exec.bind(null, 'git config --bool core.bare true', {
+            cwd: self.upstreamDir
         })
     ], cb);
 };
@@ -154,7 +156,7 @@ TestCluster.prototype.writeConfigFile =
 function writeConfigFile(cb) {
     var self = this;
 
-    var data = JSON.stringify(self.config, null, '    ');
+    var data = JSON.stringify(self.config, null, '    ') + '\n';
     fs.writeFile(self.configFile, data, 'utf8', cb);
 };
 
