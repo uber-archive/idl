@@ -23,13 +23,16 @@
 var parseArgs = require('minimist');
 var process = require('process');
 var assert = require('assert');
-var fs = require('fs');
+var readJSON = require('read-json');
 var console = require('console');
 var path = require('path');
 var os = require('os');
 var DebugLogtron = require('debug-logtron');
 
 var ThriftRepository = require('../thrift-repository.js');
+
+/*eslint no-process-env: 0*/
+var HOME = process.env.HOME;
 
 module.exports = ThriftGod;
 
@@ -68,20 +71,19 @@ function ThriftGod(opts) {
 ThriftGod.prototype.bootstrap = function bootstrap(cb) {
     var self = this;
 
-    fs.readFile(self.configFile, 'utf8', onConfig);
+    readJSON(self.configFile, onConfig);
 
-    function onConfig(err, content) {
+    function onConfig(err, data) {
         if (err) {
             return cb(err);
         }
-
-        var data = JSON.parse(content);
 
         self.config = ThriftGodConfig(data);
         self.thriftRepo = ThriftRepository({
             remotes: self.config.remotes,
             upstream: self.config.upstream,
             repositoryFolder: self.config.repositoryFolder,
+            cacheLocation: self.config.cacheLocation,
             logger: self.logger
         });
 
@@ -116,17 +118,59 @@ function ThriftGodConfig(data) {
         'must configure `remotes`');
     assert(data.upstream && typeof data.upstream === 'string',
         'must configure `upstream`');
+    assert(data.fileNameStrategy &&
+        typeof data.fileNameStrategy === 'string',
+        'must configure fileNameStrategy');
 
-    self.remotes = data.remotes;
+    self.fileNameStrategy = data.fileNameStrategy;
     self.upstream = data.upstream;
 
-    if (typeof data.repositoryFolder === 'string') {
-        self.repositoryFolder = data.repositoryFolder;
-    } else {
-        self.repositoryFolder = path.join(
-            os.tmpDir(),
-            'thrift-god',
-            new Date().toISOString()
-        );
+    self.repositoryFolder = data.repositoryFolder || path.join(
+        os.tmpDir(), 'thrift-god', new Date().toISOString()
+    );
+    self.cacheLocation = data.cacheLocation || path.join(
+        HOME, '.thrift-god', 'remote-cache'
+    );
+
+    self.remotes = [];
+    for (var i = 0; i < data.remotes.length; i++) {
+        var remote = data.remotes[i];
+        self.remotes.push(ThriftRemote({
+            repository: remote.repository,
+            branch: remote.branch,
+            strategy: self.fileNameStrategy
+        }));
     }
+}
+
+function ThriftRemote(opts) {
+    if (!(this instanceof ThriftRemote)) {
+        return new ThriftRemote(opts);
+    }
+
+    var self = this;
+
+    assert(opts.repository, 'opts.repository required');
+    assert(opts.strategy, 'opts.strategy required');
+
+    self.repository = opts.repository;
+    self.branch = opts.branch || 'master';
+    self.folderName = null;
+
+    var parts;
+    if (opts.strategy === 'lastSegment') {
+        parts = self.repository.split('/');
+        self.folderName = parts[parts.length - 1];
+    } else if (opts.strategy === 'lastTwoSegments') {
+        parts = self.repository.split('/');
+        self.folderName = path.join(
+            parts[parts.length - 2],
+            parts[parts.length - 1]
+        );
+    } else if (opts.strategy === 'splitOnColon') {
+        parts = self.repository.split(':');
+        self.folderName = parts[parts.length - 1];
+    }
+
+    self.fileName = self.folderName + '.thrift';
 }

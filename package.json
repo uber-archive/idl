@@ -20,7 +20,9 @@
     "debug-logtron": "4.0.0",
     "minimist": "1.1.1",
     "process": "0.11.1",
-    "rimraf": "2.3.4"
+    "read-json": "0.1.0",
+    "rimraf": "2.3.4",
+    "string-template": "0.2.1"
   },
   "devDependencies": {
     "fixtures-fs": "2.0.0",
@@ -32,7 +34,8 @@
     "run-series": "1.1.1",
     "tape": "^3.4.0",
     "tape-cluster": "2.0.0",
-    "uber-standard": "3.6.4"
+    "uber-standard": "3.6.4",
+    "xtend": "4.0.0"
   },
   "licenses": [
     {
