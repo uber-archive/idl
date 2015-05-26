@@ -103,7 +103,6 @@ function _cloneRepo(callback) {
             return callback(err);
         }
 
-        // TODO: fetch meta.json into memory
         self.meta.readFile(onMetaRead);
     }
 

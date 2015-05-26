@@ -51,6 +51,7 @@ function ThriftGod(opts) {
 ThriftGod.prototype.bootstrap = function bootstrap(cb) {
     var self = this;
 
+    // TODO reload json file when it changes
     readJSON(self.configFile, onConfig);
 
     function onConfig(err, data) {
