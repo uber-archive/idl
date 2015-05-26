@@ -191,6 +191,7 @@ function _processThriftFile(remote, thriftFile, callback) {
     var currentSha = self.meta.getSha(remote.folderName);
     var newSha = sha1(thriftFile);
 
+    // TODO: handle case where sha is the same
     if (currentSha === newSha) {
         return callback(null);
     }
