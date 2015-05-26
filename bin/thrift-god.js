@@ -134,7 +134,11 @@ function ThriftRemote(opts) {
     assert(opts.strategy, 'opts.strategy required');
 
     self.repository = opts.repository;
+    // TODO handle branches
     self.branch = opts.branch || 'master';
+    // TODO handle localFileName
+    self.localFileName = opts.localFileName ||
+        'thrift/service.thrift';
     self.folderName = null;
 
     var parts;
@@ -153,4 +157,5 @@ function ThriftRemote(opts) {
     }
 
     self.fileName = self.folderName + '.thrift';
+
 }
