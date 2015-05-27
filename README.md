@@ -91,6 +91,17 @@ The `thrift-god` daemon will fetch all the remotes and place their thrift
 files in the `upstream` repository. You can use `thrift-get` to fetch from
 the upstream repository.
 
+## TODO:
+
+This project is not done yet:
+
+ - [x] Implement `thrift-god` config loader
+ - [x] Implement fetching from `remotes` into `upstream`
+ - [ ] Make `thrift-god` a repeating cron job
+ - [ ] Support `thriftFile` in config.
+ - [ ] Support `branch` in config.
+ - [ ] Implement `thrift-get` binary.
+
 ## Installation
 
 `npm install thrift-god --global`
