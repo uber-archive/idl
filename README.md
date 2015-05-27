@@ -25,6 +25,9 @@ It comes with two CLI commands, `thrift-god` and `thrift-get`.
  - There should only be one version of the world. Your company runs at
     a single version in production; all the files should ultimately be
     under one version.
+ - The one version should be live. Developers should not manually publish
+    new versions; instead we should just take `master` as the source of
+    truth.
 
 ### As a client: `thrift-get`
 
