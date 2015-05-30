@@ -21,7 +21,7 @@ var defaultRepos = {
             'thrift': {
                 'service.thrift': '' +
                     'service A {\n' +
-                    '   i32 echo(1:i32 value)\n' +
+                    '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
         }
@@ -32,7 +32,7 @@ var defaultRepos = {
             'thrift': {
                 'service.thrift': '' +
                     'service B {\n' +
-                    '   i32 echo(1:i32 value)\n' +
+                    '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
         }
@@ -43,7 +43,7 @@ var defaultRepos = {
             'thrift': {
                 'service.thrift': '' +
                     'service C {\n' +
-                    '   i32 echo(1:i32 value)\n' +
+                    '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
         }
@@ -54,7 +54,7 @@ var defaultRepos = {
             'thrift': {
                 'service.thrift': '' +
                     'service D {\n' +
-                    '   i32 echo(1:i32 value)\n' +
+                    '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
         }
@@ -95,10 +95,13 @@ function TestCluster(opts) {
         cacheLocation: self.cacheDir,
         remotes: Object.keys(self.remoteRepos)
             .map(function buildRepoObj(remoteName) {
+                var repoInfo = self.remoteRepos[remoteName];
+
                 return {
                     repository: 'file://' + path.join(
                         self.remotesDir, remoteName
-                    )
+                    ),
+                    branch: repoInfo.branch
                 };
             })
     }, opts.config || {});
@@ -130,20 +133,28 @@ TestCluster.prototype.gitify = function gitify(cb) {
 
     var keys = Object.keys(self.remoteRepos);
     var tasks = keys.map(function buildThunk(remoteKey) {
+        var repoInfo = self.remoteRepos[remoteKey];
         var cwd = path.join(self.remotesDir, remoteKey);
 
         return function thunk(callback) {
             series([
-                exec.bind(null, 'git init', {
+                git('init', {
                     cwd: cwd
                 }),
-                exec.bind(null, 'git add --all .', {
+                git('commit --allow-empty -am "initial"', {
                     cwd: cwd
                 }),
-                exec.bind(null, 'git commit -am "initial"', {
+                repoInfo.branch !== 'master' ?
+                    git('checkout -b ' + repoInfo.branch, {
+                        cwd: cwd
+                    }) : null,
+                git('add --all .', {
+                    cwd: cwd
+                }),
+                git('commit -am "second"', {
                     cwd: cwd
                 })
-            ], callback);
+            ].filter(Boolean), callback);
         };
     });
 
@@ -155,13 +166,13 @@ TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
 
     series([
         mkdirp.bind(null, self.upstreamDir),
-        exec.bind(null, 'git init', {
+        git('init', {
             cwd: self.upstreamDir
         }),
-        exec.bind(null, 'git commit --allow-empty -am "initial"', {
+        git('commit --allow-empty -am "initial"', {
             cwd: self.upstreamDir
         }),
-        exec.bind(null, 'git config --bool core.bare true', {
+        git('config --bool core.bare true', {
             cwd: self.upstreamDir
         })
     ], cb);
@@ -236,3 +247,7 @@ TestCluster.prototype.close = function close(cb) {
 
     rimraf(self.fixturesDir, cb);
 };
+
+function git(text, opts) {
+    return exec.bind(null, 'git ' + text, opts);
+}
