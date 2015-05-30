@@ -40,13 +40,13 @@ TestCluster.test('run the thrift-god', {
         );
         assert.equal(data.gitlog,
             'Updating D to latest version ' +
-                'f700f70c8e1744cbe85ce3ab1c2ef04d09fc2a0a\n' +
+                'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d\n' +
             'Updating C to latest version ' +
-                '65329cc064c23524c837ef8fe944664cad6052f1\n' +
+                '484742978a072e46ae1131d8efe7fe0377d35c54\n' +
             'Updating B to latest version ' +
-                'd384fde576144a426d3af3d939866bd6716314f9\n' +
+                '424a6ca9b4660bf432045eeba7a3254ab38d5701\n' +
             'Updating A to latest version ' +
-                'b20915b60213b0a5d4923444d803aa3fb3e36717\n' +
+                'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
             'initial\n'
         );
 
@@ -56,32 +56,74 @@ TestCluster.test('run the thrift-god', {
             data.meta.version);
 
         assert.equal(data.meta.remotes.A.sha,
-            'b20915b60213b0a5d4923444d803aa3fb3e36717');
+            'd329c8c24d0871076a5f05180a439bccb9bebe71');
         assert.equal(data.meta.remotes.B.sha,
-            'd384fde576144a426d3af3d939866bd6716314f9');
+            '424a6ca9b4660bf432045eeba7a3254ab38d5701');
         assert.equal(data.meta.remotes.C.sha,
-            '65329cc064c23524c837ef8fe944664cad6052f1');
+            '484742978a072e46ae1131d8efe7fe0377d35c54');
         assert.equal(data.meta.remotes.D.sha,
-            'f700f70c8e1744cbe85ce3ab1c2ef04d09fc2a0a');
+            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
 
         assert.deepEqual(data.remotes, {
             'A':
                 'service A {\n' +
-                '   i32 echo(1:i32 value)\n' +
+                '    i32 echo(1:i32 value)\n' +
                 '}\n',
             'B':
                 'service B {\n' +
-                '   i32 echo(1:i32 value)\n' +
+                '    i32 echo(1:i32 value)\n' +
                 '}\n',
             'C':
                 'service C {\n' +
-                '   i32 echo(1:i32 value)\n' +
+                '    i32 echo(1:i32 value)\n' +
                 '}\n',
             'D':
                 'service D {\n' +
-                '   i32 echo(1:i32 value)\n' +
+                '    i32 echo(1:i32 value)\n' +
                 '}\n'
         });
+
+        assert.end();
+    }
+});
+
+TestCluster.test('run with branches', {
+    remoteRepos: {
+        'E': {
+            branch: 'foo',
+            files: {
+                'thrift': {
+                    'service.thrift': '' +
+                        'service E {\n' +
+                        '    i32 echo(1:i32 value)\n' +
+                        '}\n'
+                }
+            }
+        }
+    },
+    config: {}
+}, function t(cluster, assert) {
+    cluster.inspectUpstream(onUpstream);
+
+    function onUpstream(err, data) {
+        assert.ifError(err);
+
+        assert.equal(data.thrift,
+            'tree HEAD:thrift\n' +
+            '\n' +
+            'A.thrift\n' +
+            'B.thrift\n' +
+            'C.thrift\n' +
+            'D.thrift\n' +
+            'E.thrift\n'
+        );
+
+        assert.equal(
+            data.remotes.E,
+            'service E {\n' +
+            '    i32 echo(1:i32 value)\n' +
+            '}\n'
+        );
 
         assert.end();
     }

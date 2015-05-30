@@ -91,6 +91,7 @@ function _initialLoad(remote, callback) {
 
     var command = 'git clone ' +
         '--no-checkout ' +
+        '--branch ' + remote.branch + ' ' +
         '--depth 1 ' +
         remote.repository + ' ' +
         remote.folderName;
