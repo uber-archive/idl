@@ -36,35 +36,47 @@ var ThriftGod = require('../../bin/thrift-god.js');
 
 var defaultRepos = {
     'A': {
-        'thrift': {
-            'service.thrift': '' +
-                'service A {\n' +
-                '   i32 echo(1:i32 value)\n' +
-                '}\n'
+        branch: 'master',
+        files: {
+            'thrift': {
+                'service.thrift': '' +
+                    'service A {\n' +
+                    '   i32 echo(1:i32 value)\n' +
+                    '}\n'
+            }
         }
     },
     'B': {
-        'thrift': {
-            'service.thrift': '' +
-                'service B {\n' +
-                '   i32 echo(1:i32 value)\n' +
-                '}\n'
+        branch: 'master',
+        files: {
+            'thrift': {
+                'service.thrift': '' +
+                    'service B {\n' +
+                    '   i32 echo(1:i32 value)\n' +
+                    '}\n'
+            }
         }
     },
     'C': {
-        'thrift': {
-            'service.thrift': '' +
-                'service C {\n' +
-                '   i32 echo(1:i32 value)\n' +
-                '}\n'
+        branch: 'master',
+        files: {
+            'thrift': {
+                'service.thrift': '' +
+                    'service C {\n' +
+                    '   i32 echo(1:i32 value)\n' +
+                    '}\n'
+            }
         }
     },
     'D': {
-        'thrift': {
-            'service.thrift': '' +
-                'service D {\n' +
-                '   i32 echo(1:i32 value)\n' +
-                '}\n'
+        branch: 'master',
+        files: {
+            'thrift': {
+                'service.thrift': '' +
+                    'service D {\n' +
+                    '   i32 echo(1:i32 value)\n' +
+                    '}\n'
+            }
         }
     }
 };
@@ -82,7 +94,13 @@ function TestCluster(opts) {
 
     var self = this;
 
-    self.remoteRepos = opts.remoteRepos || defaultRepos;
+    self.remoteRepos = extend(defaultRepos, opts.remoteRepos || {});
+    self.repoFixtures = Object.keys(self.remoteRepos)
+        .reduce(function getFiles(acc, name) {
+            acc[name] = self.remoteRepos[name].files;
+            return acc;
+        }, {});
+
     self.fixturesDir = path.join(__dirname, '..', 'fixtures');
     self.remotesDir = path.join(self.fixturesDir, 'remotes');
     self.upstreamDir = path.join(self.fixturesDir, 'upstream');
@@ -115,7 +133,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
         createFixtures.bind(
-            null, self.remotesDir, self.remoteRepos
+            null, self.remotesDir, self.repoFixtures
         ),
         self.gitify.bind(self),
         self.setupUpstream.bind(self),
