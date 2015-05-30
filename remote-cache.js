@@ -102,7 +102,7 @@ function _showThriftFile(remote, callback) {
 
     var cwd = path.join(self.cacheLocation, remote.folderName);
 
-    var command = 'git show HEAD:thrift/service.thrift';
+    var command = 'git show HEAD:' + remote.localFileName;
     gitexec(command, {
         cwd: cwd,
         logger: self.logger

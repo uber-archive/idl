@@ -80,8 +80,49 @@ TestCluster.test('run with branches', {
                 }
             }
         }
-    },
-    config: {}
+    }
+}, function t(cluster, assert) {
+    cluster.inspectUpstream(onUpstream);
+
+    function onUpstream(err, data) {
+        assert.ifError(err);
+
+        assert.equal(data.thrift,
+            'tree HEAD:thrift\n' +
+            '\n' +
+            'A.thrift\n' +
+            'B.thrift\n' +
+            'C.thrift\n' +
+            'D.thrift\n' +
+            'E.thrift\n'
+        );
+
+        assert.equal(
+            data.remotes.E,
+            'service E {\n' +
+            '    i32 echo(1:i32 value)\n' +
+            '}\n'
+        );
+
+        assert.end();
+    }
+});
+
+TestCluster.test('run with custom localFileName', {
+    remoteRepos: {
+        'E': {
+            branch: 'master',
+            localFileName: 'thrift/foo.thrift',
+            files: {
+                'thrift': {
+                    'foo.thrift': '' +
+                        'service E {\n' +
+                        '    i32 echo(1:i32 value)\n' +
+                        '}\n'
+                }
+            }
+        }
+    }
 }, function t(cluster, assert) {
     cluster.inspectUpstream(onUpstream);
 
