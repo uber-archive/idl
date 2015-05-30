@@ -44,7 +44,8 @@ var defaultRepos = {
                     '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
-        }
+        },
+        localFileName: 'thrift/service.thrift'
     },
     'B': {
         branch: 'master',
@@ -55,7 +56,8 @@ var defaultRepos = {
                     '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
-        }
+        },
+        localFileName: 'thrift/service.thrift'
     },
     'C': {
         branch: 'master',
@@ -66,7 +68,8 @@ var defaultRepos = {
                     '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
-        }
+        },
+        localFileName: 'thrift/service.thrift'
     },
     'D': {
         branch: 'master',
@@ -77,7 +80,8 @@ var defaultRepos = {
                     '    i32 echo(1:i32 value)\n' +
                     '}\n'
             }
-        }
+        },
+        localFileName: 'thrift/service.thrift'
     }
 };
 
@@ -121,7 +125,8 @@ function TestCluster(opts) {
                     repository: 'file://' + path.join(
                         self.remotesDir, remoteName
                     ),
-                    branch: repoInfo.branch
+                    branch: repoInfo.branch || 'master',
+                    localFileName: repoInfo.localFileName
                 };
             })
     }, opts.config || {});

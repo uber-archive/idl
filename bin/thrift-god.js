@@ -139,6 +139,7 @@ function ThriftGodConfig(data) {
         self.remotes.push(ThriftRemote({
             repository: remote.repository,
             branch: remote.branch,
+            localFileName: remote.localFileName,
             strategy: self.fileNameStrategy
         }));
     }
@@ -156,7 +157,6 @@ function ThriftRemote(opts) {
 
     self.repository = opts.repository;
     self.branch = opts.branch || 'master';
-    // TODO handle localFileName
     self.localFileName = opts.localFileName ||
         'thrift/service.thrift';
     self.folderName = null;
