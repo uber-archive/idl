@@ -98,8 +98,8 @@ This project is not done yet:
  - [x] Implement `thrift-god` config loader
  - [x] Implement fetching from `remotes` into `upstream`
  - [ ] Make `thrift-god` a repeating cron job
- - [ ] Support `thriftFile` in config.
- - [ ] Support `branch` in config.
+ - [x] Support `localFileName` in config.
+ - [x] Support `branch` in config.
  - [ ] Implement `thrift-get` binary.
 
 ## Installation
