@@ -63,6 +63,14 @@ TestCluster.test('run the thrift-god', {
                 '}\n'
         });
 
+        var remotes = data.meta.remotes;
+        assert.equal(data.gittag, '' +
+            'v' + new Date(remotes.A.time).getTime() + '\n' +
+            'v' + new Date(remotes.B.time).getTime() + '\n' +
+            'v' + new Date(remotes.C.time).getTime() + '\n' +
+            'v' + new Date(remotes.D.time).getTime() + '\n'
+        );
+
         assert.end();
     }
 });
@@ -343,6 +351,14 @@ TestCluster.test('updating a remote', {
                 '    i32 echo(1:i32 value)\n' +
                 '}\n'
         });
+
+        var remotes = data.meta.remotes;
+        var tags = data.gittag.trim().split('\n');
+
+        assert.equal(tags[0], 'v' + new Date(remotes.A.time).getTime());
+        assert.equal(tags[2], 'v' + new Date(remotes.C.time).getTime());
+        assert.equal(tags[3], 'v' + new Date(remotes.D.time).getTime());
+        assert.equal(tags[4], 'v' + new Date(remotes.B.time).getTime());
 
         assert.end();
     }

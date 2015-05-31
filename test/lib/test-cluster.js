@@ -249,6 +249,15 @@ TestCluster.prototype.gitshow = function gitshow(file, cb) {
     }, cb);
 };
 
+TestCluster.prototype.gittag = function gittag(cb) {
+    var self = this;
+
+    var command = 'git tag --list';
+    exec(command, {
+        cwd: self.upstreamDir
+    }, cb);
+};
+
 TestCluster.prototype.inspectUpstream =
 function inspectUpstream(callback) {
     var self = this;
@@ -261,6 +270,7 @@ function inspectUpstream(callback) {
 
     parallel({
         gitlog: self.gitlog.bind(self),
+        gittag: self.gittag.bind(self),
         meta: function thunk(cb) {
             self.gitshow('meta.json', onFile);
 
