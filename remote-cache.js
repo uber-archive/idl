@@ -98,11 +98,11 @@ RemoteCache.prototype._pullAndUpdate =
 function _pullAndUpdate(remote, callback) {
     var self = this;
 
-    var cwd = self.cacheLocation;
+    var cwd = path.join(self.cacheLocation, remote.folderName);
 
     var command = 'git fetch ' +
         '--depth 1 ' +
-        remote.repository + ' ' +
+        'origin ' +
         remote.branch;
     gitexec(command, {
         cwd: cwd,
@@ -112,9 +112,30 @@ function _pullAndUpdate(remote, callback) {
 
     function onUpdated(err, stdout, stderr) {
         if (err) {
-            self.logger.error('git ? failed', {
+            self.logger.error('git fetch remote failed', {
                 err: err,
                 stderr: stderr,
+                cwd: cwd,
+                remote: remote
+            });
+            return callback(err);
+        }
+
+        var command2 = 'git reset ' +
+            '--hard ' +
+            'origin/' + remote.branch;
+        gitexec(command2, {
+            cwd: cwd,
+            logger: self.logger
+        }, onMerged);
+    }
+
+    function onMerged(err, stdout, stderr) {
+        if (err) {
+            self.logger.error('git merge remote failed', {
+                err: err,
+                stderr: stderr,
+                cwd: cwd,
                 remote: remote
             });
             return callback(err);

@@ -169,6 +169,24 @@ TestCluster.prototype.gitify = function gitify(cb) {
     return parallel(tasks, cb);
 };
 
+TestCluster.prototype.updateRemote =
+function updateRemote(name, files, callback) {
+    var self = this;
+
+    var remoteDir = path.join(self.remotesDir, name);
+
+    series([
+        rimraf.bind(null, path.join(remoteDir, 'thrift')),
+        createFixtures.bind(null, remoteDir, files),
+        git('add --all .', {
+            cwd: remoteDir
+        }),
+        git('commit -am "update files"', {
+            cwd: remoteDir
+        })
+    ], callback);
+};
+
 TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
     var self = this;
 

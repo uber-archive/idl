@@ -73,7 +73,29 @@ function bootstrap(callback) {
             return callback(err);
         }
 
-        self._cloneRepo(callback);
+        self._cloneRepo(onRepoCloned);
+    }
+
+    function onRepoCloned(err) {
+        if (err) {
+            self.logger.error('failed to clone upstream', {
+                err: err
+            });
+            return callback(err);
+        }
+
+        self.fetchRemotes(onRemotes);
+    }
+
+    function onRemotes(err) {
+        if (err) {
+            self.logger.error('fetching remotes failed', {
+                err: err
+            });
+            return callback(err);
+        }
+
+        callback(null);
     }
 };
 
@@ -116,17 +138,6 @@ function _cloneRepo(callback) {
             return callback(err);
         }
 
-        self._fetchRemotes(onRemotes);
-    }
-
-    function onRemotes(err) {
-        if (err) {
-            self.logger.error('fetching remotes failed', {
-                err: err
-            });
-            return callback(err);
-        }
-
         callback(null);
     }
 };
@@ -135,8 +146,8 @@ function _cloneRepo(callback) {
         RemoteCache.getThriftFile(remote)
     }
 */
-ThriftRepository.prototype._fetchRemotes =
-function _fetchRemotes(callback) {
+ThriftRepository.prototype.fetchRemotes =
+function fetchRemotes(callback) {
     var self = this;
 
     var remotes = self.remotes.slice();
