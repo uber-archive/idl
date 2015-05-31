@@ -169,3 +169,57 @@ TestCluster.test('run with custom localFileName', {
         assert.end();
     }
 });
+
+TestCluster.test('run without thrift file', {
+    remoteRepos: {
+        'E': {
+            localFileName: 'thrift/no.thrift',
+            files: {
+                'thrift': {
+                    'empty.thrift': ''
+                }
+            }
+        }
+    },
+    prepareOnly: true
+}, function t(cluster, assert) {
+    cluster.logger.whitelist('warn', 'git output');
+    cluster.logger.whitelist('warn', 'git show thrift file failed');
+
+    cluster.setupThriftGod(onSetup);
+
+    function onSetup(err) {
+        assert.ifError(err);
+
+        cluster.inspectUpstream(onUpstream);
+    }
+
+    function onUpstream(err, data) {
+        assert.ifError(err);
+
+        var items = cluster.logger.items();
+        assert.equal(items.length, 2);
+
+        assert.equal(items[0].fields.msg, 'git output');
+        assert.equal(items[1].fields.msg,
+            'git show thrift file failed');
+        assert.equal(items[1].fields.stderr,
+            'fatal: Path \'thrift/no.thrift\' does not ' +
+                'exist in \'HEAD\'\n');
+
+        assert.equal(data.thrift,
+            'tree HEAD:thrift\n' +
+            '\n' +
+            'A.thrift\n' +
+            'B.thrift\n' +
+            'C.thrift\n' +
+            'D.thrift\n' +
+            'E.thrift\n'
+        );
+
+        assert.equal(data.remotes.E, '');
+
+        assert.end();
+    }
+});
+

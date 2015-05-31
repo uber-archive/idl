@@ -31,6 +31,7 @@ var rimraf = require('rimraf');
 var mkdirp = require('mkdirp');
 var wrapCluster = require('tape-cluster');
 var extend = require('xtend');
+var DebugLogtron = require('debug-logtron');
 
 var ThriftGod = require('../../bin/thrift-god.js');
 
@@ -104,6 +105,7 @@ function TestCluster(opts) {
             acc[name] = self.remoteRepos[name].files;
             return acc;
         }, {});
+    self.prepareOnly = opts.prepareOnly || false;
 
     self.fixturesDir = path.join(__dirname, '..', 'fixtures');
     self.remotesDir = path.join(self.fixturesDir, 'remotes');
@@ -131,6 +133,7 @@ function TestCluster(opts) {
             })
     }, opts.config || {});
 
+    self.logger = DebugLogtron('thriftgod');
     self.thriftGod = null;
 }
 
@@ -146,8 +149,8 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         self.gitify.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
-        self.setupThriftGod.bind(self)
-    ], cb);
+        self.prepareOnly ? null : self.setupThriftGod.bind(self)
+    ].filter(Boolean), cb);
 };
 
 // git init
@@ -216,7 +219,8 @@ function setupThriftGod(cb) {
     var self = this;
 
     self.thriftGod = ThriftGod({
-        configFile: self.configFile
+        configFile: self.configFile,
+        logger: self.logger
     });
     self.thriftGod.bootstrap(cb);
 };

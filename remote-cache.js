@@ -130,13 +130,12 @@ function _showThriftFile(remote, callback) {
 
     function onGitShow(err, stdout, stderr) {
         if (err) {
-            // TODO handle repos without thrift files
-            self.logger.error('git show thrift file failed', {
+            self.logger.warn('git show thrift file failed', {
                 err: err,
                 stderr: stderr,
                 remote: remote
             });
-            return callback(err);
+            return callback(null, '');
         }
 
         callback(null, String(stdout));
