@@ -51,7 +51,6 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
             return cb(err);
         }
 
-        // TODO: handle case where meta.json already exists
         self._remotes = meta.remotes;
         cb(null);
     }
@@ -65,7 +64,6 @@ ThriftMetaFile.prototype.getSha = function getSha(folderName) {
         return null;
     }
 
-    // TODO: handle case where project already exists
     return remote.sha;
 };
 
