@@ -297,12 +297,11 @@ TestCluster.test('updating a remote', {
     function onUpdated(err) {
         assert.ifError(err);
 
-        cluster.setupThriftGod(onSetup);
+        cluster.timers.advance(30 * 1000 + 5);
+        cluster.thriftGod.once('fetchedRemotes', onRemotes);
     }
 
-    function onSetup(err) {
-        assert.ifError(err);
-
+    function onRemotes() {
         cluster.inspectUpstream(onUpstream);
     }
 

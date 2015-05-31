@@ -28,6 +28,9 @@ var console = require('console');
 var path = require('path');
 var os = require('os');
 var DebugLogtron = require('debug-logtron');
+var globalTimers = require('timers');
+var EventEmitter = require('events').EventEmitter;
+var util = require('util');
 
 var ThriftRepository = require('../thrift-repository.js');
 
@@ -39,6 +42,10 @@ module.exports = ThriftGod;
 if (require.main === module) {
     var argv = parseArgs(process.argv.slice(2));
     var thriftGod = ThriftGod(argv);
+    thriftGod.on('error', function onRemote(err) {
+        console.error('ERR: ', err);
+        process.exit(1);
+    });
     thriftGod.bootstrap(function onFini(err) {
         if (err) {
             console.error('ERR: ', err);
@@ -54,6 +61,7 @@ function ThriftGod(opts) {
     }
 
     var self = this;
+    EventEmitter.call(self);
 
     self.opts = opts;
     if (opts.h || opts.help) {
@@ -61,12 +69,15 @@ function ThriftGod(opts) {
     }
 
     self.logger = opts.logger || DebugLogtron('thriftgod');
+    self.timers = opts.timers || globalTimers;
     self.configFile = opts['config-file'] || opts.configFile;
     assert(self.configFile, '--config-file is required');
 
     self.config = null;
     self.thriftRepo = null;
+    self.timer = null;
 }
+util.inherits(ThriftGod, EventEmitter);
 
 ThriftGod.prototype.bootstrap = function bootstrap(cb) {
     var self = this;
@@ -96,14 +107,42 @@ ThriftGod.prototype.bootstrap = function bootstrap(cb) {
             return cb(err);
         }
 
-        /* TODO: run cron ? */
+        self.emit('fetchedRemotes');
+        self.repeat();
         cb(null);
+    }
+};
+
+ThriftGod.prototype.repeat = function repeat() {
+    var self = this;
+
+    self.timers.setTimeout(
+        fetchRemotes, self.config.fetchInterval
+    );
+
+    function fetchRemotes() {
+        self.thriftRepo.fetchRemotes(onRemote);
+    }
+
+    function onRemote(err) {
+        if (err) {
+            return self.emit('error', err);
+        }
+
+        self.emit('fetchedRemotes');
+        self.repeat();
     }
 };
 
 ThriftGod.prototype.help = function help() {
     console.log('usage: thrift-god [--help] [-h]');
     console.log('                  --config-file=<file>');
+};
+
+ThriftGod.prototype.destroy = function destroy() {
+    var self = this;
+
+    self.timers.clearTimeout(self.timer);
 };
 
 function ThriftGodConfig(data) {
@@ -122,9 +161,13 @@ function ThriftGodConfig(data) {
     assert(data.fileNameStrategy &&
         typeof data.fileNameStrategy === 'string',
         'must configure fileNameStrategy');
+    assert(data.fetchInterval &&
+        typeof data.fetchInterval === 'number',
+        'must configure fetchInterval');
 
     self.fileNameStrategy = data.fileNameStrategy;
     self.upstream = data.upstream;
+    self.fetchInterval = data.fetchInterval;
 
     self.repositoryFolder = data.repositoryFolder || path.join(
         os.tmpDir(), 'thrift-god', new Date().toISOString()
