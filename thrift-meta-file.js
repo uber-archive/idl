@@ -94,3 +94,9 @@ ThriftMetaFile.prototype._writeFile = function _writeFile(callback) {
 
     fs.writeFile(self.fileName, newContent, 'utf8', callback);
 };
+
+ThriftMetaFile.prototype.time = function time() {
+    var self = this;
+
+    return self._lastDate;
+};

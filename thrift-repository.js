@@ -282,7 +282,23 @@ function _processThriftFile(remote, thriftFile, callback) {
             return callback(err);
         }
 
-        var command = 'git push origin master';
+        var currTime = self.meta.time();
+
+        var command = 'git tag ' +
+            'v' + currTime.getTime() + ' ' +
+            '-am "' + currTime.toISOString() + '"';
+        gitexec(command, {
+            cwd: self.repositoryFolder,
+            logger: self.logger
+        }, onTag);
+    }
+
+    function onTag(err) {
+        if (err) {
+            return callback(err);
+        }
+
+        var command = 'git push origin master --tags';
         gitexec(command, {
             cwd: self.repositoryFolder,
             logger: self.logger,
