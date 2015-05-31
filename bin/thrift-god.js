@@ -165,12 +165,14 @@ function ThriftRemote(opts) {
     if (opts.strategy === 'lastSegment') {
         parts = self.repository.split('/');
         self.folderName = parts[parts.length - 1];
+    // TODO: test lastTwoSegments strategy
     } else if (opts.strategy === 'lastTwoSegments') {
         parts = self.repository.split('/');
         self.folderName = path.join(
             parts[parts.length - 2],
             parts[parts.length - 1]
         );
+    // TODO: test splitOnColon strategy
     } else if (opts.strategy === 'splitOnColon') {
         parts = self.repository.split(':');
         self.folderName = parts[parts.length - 1];

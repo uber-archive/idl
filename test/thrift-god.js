@@ -223,7 +223,7 @@ TestCluster.test('run without thrift file', {
     }
 });
 
-TestCluster.test.only('running thrift-god twice', {
+TestCluster.test('running thrift-god twice', {
     prepareOnly: true
 }, function t(cluster, assert) {
     cluster.setupThriftGod(onSetup);
@@ -276,6 +276,94 @@ TestCluster.test.only('running thrift-god twice', {
             '484742978a072e46ae1131d8efe7fe0377d35c54');
         assert.equal(data.meta.remotes.D.sha,
             'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
+
+        assert.end();
+    }
+});
+
+TestCluster.test('updating a remote', {
+    config: {}
+}, function t(cluster, assert) {
+    cluster.updateRemote('B', {
+        thrift: {
+            'service.thrift': '' +
+                'service B {\n' +
+                '    i32 echo(1:i32 value)\n' +
+                '    i64 echo64(1:i64 value)\n' +
+                '}\n'
+        }
+    }, onUpdated);
+
+    function onUpdated(err) {
+        assert.ifError(err);
+
+        cluster.setupThriftGod(onSetup);
+    }
+
+    function onSetup(err) {
+        assert.ifError(err);
+
+        cluster.inspectUpstream(onUpstream);
+    }
+
+    function onUpstream(err, data) {
+        assert.ifError(err);
+
+        assert.equal(data.thrift,
+            'tree HEAD:thrift\n' +
+            '\n' +
+            'A.thrift\n' +
+            'B.thrift\n' +
+            'C.thrift\n' +
+            'D.thrift\n'
+        );
+        assert.equal(data.gitlog,
+            'Updating B to latest version ' +
+                'e1359a7f03df1988e8c11b85fe7b59df16ee2806\n' +
+            'Updating D to latest version ' +
+                'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d\n' +
+            'Updating C to latest version ' +
+                '484742978a072e46ae1131d8efe7fe0377d35c54\n' +
+            'Updating B to latest version ' +
+                '424a6ca9b4660bf432045eeba7a3254ab38d5701\n' +
+            'Updating A to latest version ' +
+                'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
+            'initial\n'
+        );
+
+        assert.equal(data.meta.time,
+            data.meta.remotes.B.time);
+        assert.equal(new Date(data.meta.time).getTime(),
+            data.meta.version);
+
+        assert.equal(data.meta.remotes.A.sha,
+            'd329c8c24d0871076a5f05180a439bccb9bebe71');
+        assert.equal(data.meta.remotes.B.sha,
+            'e1359a7f03df1988e8c11b85fe7b59df16ee2806');
+        assert.equal(data.meta.remotes.C.sha,
+            '484742978a072e46ae1131d8efe7fe0377d35c54');
+        assert.equal(data.meta.remotes.D.sha,
+            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
+
+        assert.deepEqual(data.remotes, {
+            'A':
+                'service A {\n' +
+                '    i32 echo(1:i32 value)\n' +
+                '}\n',
+            'B':
+                'service B {\n' +
+                '    i32 echo(1:i32 value)\n' +
+                '    i64 echo64(1:i64 value)\n' +
+                '}\n',
+            'C':
+                'service C {\n' +
+                '    i32 echo(1:i32 value)\n' +
+                '}\n',
+            'D':
+                'service D {\n' +
+                '    i32 echo(1:i32 value)\n' +
+                '}\n'
+        });
 
         assert.end();
     }
