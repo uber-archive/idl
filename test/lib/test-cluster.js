@@ -12,6 +12,7 @@ var mkdirp = require('mkdirp');
 var wrapCluster = require('tape-cluster');
 var extend = require('xtend');
 var DebugLogtron = require('debug-logtron');
+var TimeMock = require('time-mock');
 
 var ThriftGod = require('../../bin/thrift-god.js');
 
@@ -99,6 +100,7 @@ function TestCluster(opts) {
         repositoryFolder: self.repositoryDir,
         fileNameStrategy: 'lastSegment',
         cacheLocation: self.cacheDir,
+        fetchInterval: opts.fetchInterval || 30 * 1000,
         remotes: Object.keys(self.remoteRepos)
             .map(function buildRepoObj(remoteName) {
                 var repoInfo = self.remoteRepos[remoteName];
@@ -114,6 +116,7 @@ function TestCluster(opts) {
     }, opts.config || {});
 
     self.logger = DebugLogtron('thriftgod');
+    self.timers = TimeMock(0);
     self.thriftGod = null;
 }
 
@@ -216,9 +219,14 @@ TestCluster.prototype.setupThriftGod =
 function setupThriftGod(cb) {
     var self = this;
 
+    if (self.thriftGod) {
+        self.thriftGod.destroy();
+    }
+
     self.thriftGod = ThriftGod({
         configFile: self.configFile,
-        logger: self.logger
+        logger: self.logger,
+        timers: self.timers
     });
     self.thriftGod.bootstrap(cb);
 };
@@ -272,6 +280,7 @@ function inspectUpstream(callback) {
 TestCluster.prototype.close = function close(cb) {
     var self = this;
 
+    self.thriftGod.destroy();
     rimraf(self.fixturesDir, cb);
 };
 
