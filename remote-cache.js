@@ -56,7 +56,6 @@ function fetchThriftFile(remote, callback) {
         if (!exists) {
             self._initialLoad(remote, callback);
         } else {
-            // TODO implement
             self._pullAndUpdate(remote, callback);
         }
     }
@@ -84,6 +83,36 @@ function _initialLoad(remote, callback) {
     function onCloned(err, stdout, stderr) {
         if (err) {
             self.logger.error('git clone remote failed', {
+                err: err,
+                stderr: stderr,
+                remote: remote
+            });
+            return callback(err);
+        }
+
+        self._showThriftFile(remote, callback);
+    }
+};
+
+RemoteCache.prototype._pullAndUpdate =
+function _pullAndUpdate(remote, callback) {
+    var self = this;
+
+    var cwd = self.cacheLocation;
+
+    var command = 'git fetch ' +
+        '--depth 1 ' +
+        remote.repository + ' ' +
+        remote.branch;
+    gitexec(command, {
+        cwd: cwd,
+        logger: self.logger,
+        ignoreStderr: true
+    }, onUpdated);
+
+    function onUpdated(err, stdout, stderr) {
+        if (err) {
+            self.logger.error('git ? failed', {
                 err: err,
                 stderr: stderr,
                 remote: remote

@@ -190,7 +190,6 @@ function _processThriftFile(remote, thriftFile, callback) {
     var currentSha = self.meta.getSha(remote.folderName);
     var newSha = sha1(thriftFile);
 
-    // TODO: handle case where sha is the same
     if (currentSha === newSha) {
         return callback(null);
     }
@@ -234,6 +233,7 @@ function _processThriftFile(remote, thriftFile, callback) {
             return callback(err);
         }
 
+        // TODO: git tag whenever we update
         var message = template(GIT_COMMIT_MESSAGE, {
             remote: remote.folderName,
             sha: newSha
