@@ -106,7 +106,7 @@ TestCluster.test('run thrift-get update', {
     series([
         cluster.thriftGet.bind(cluster, 'add D'),
         cluster.thriftGet.bind(cluster, 'add B')
-    ], onAdded)
+    ], onAdded);
 
     function onAdded(err) {
         assert.ifError(err);
