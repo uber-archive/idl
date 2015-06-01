@@ -39,7 +39,7 @@ var HOME = process.env.HOME;
 
 module.exports = ThriftGod;
 
-if (require.main === module) {
+function main() {
     var argv = parseArgs(process.argv.slice(2));
     var thriftGod = ThriftGod(argv);
     thriftGod.on('error', function onRemote(err) {
@@ -222,5 +222,8 @@ function ThriftRemote(opts) {
     }
 
     self.fileName = self.folderName + '.thrift';
+}
 
+if (require.main === module) {
+    main();
 }
