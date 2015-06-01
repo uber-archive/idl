@@ -95,7 +95,7 @@ ThriftGet.prototype.help = function help() {
     console.log('');
     console.log('Where <command> is one of: ');
     console.log('  - list');
-    console.log('  - add <name>');
+    console.log('  - fetch <name>');
     console.log('  - update');
 };
 
@@ -131,14 +131,14 @@ ThriftGet.prototype.processArgs = function processArgs(cb) {
                 self.list(cb);
                 break;
 
-            case 'add':
+            case 'fetch':
                 var name = self.remainder[1];
 
                 if (!name) {
-                    return cb(new Error('must specify name to add'));
+                    return cb(new Error('must specify name to fetch'));
                 }
 
-                self.add(name, cb);
+                self.fetch(name, cb);
                 break;
 
             case 'update':
@@ -181,7 +181,7 @@ ListText.prototype.toString = function toString() {
     return textTable(tuples);
 };
 
-ThriftGet.prototype.add = function add(name, cb) {
+ThriftGet.prototype.fetch = function fetch(name, cb) {
     var self = this;
 
     // TODO read remote meta data and do properly
@@ -249,7 +249,7 @@ function update(cb) {
 
         var remotes = Object.keys(meta.remotes);
         parallel(remotes.map(function buildThunk(remote) {
-            return self.add.bind(self, remote);
+            return self.fetch.bind(self, remote);
         }), onFini);
     }
 
