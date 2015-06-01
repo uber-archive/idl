@@ -13,8 +13,10 @@ var wrapCluster = require('tape-cluster');
 var extend = require('xtend');
 var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
+var readDirFiles = require('read-dir-files').read;
 
 var ThriftGod = require('../../bin/thrift-god.js');
+var ThriftGet = require('../../bin/thrift-get.js');
 
 var defaultRepos = {
     'A': {
@@ -94,6 +96,8 @@ function TestCluster(opts) {
     self.repositoryDir = path.join(self.fixturesDir, 'repository');
     self.configFile = path.join(self.fixturesDir, 'config.json');
     self.cacheDir = path.join(self.fixturesDir, 'remote-cache');
+    self.getCacheDir = path.join(self.fixturesDir, 'upstream-cache');
+    self.localApp = path.join(self.fixturesDir, 'local-app');
 
     self.config = extend({
         upstream: 'file://' + self.upstreamDir,
@@ -285,6 +289,25 @@ function inspectUpstream(callback) {
         thrift: self.gitshow.bind(self, 'thrift'),
         remotes: parallel.bind(null, remoteTasks)
     }, callback);
+};
+
+TestCluster.prototype.inspectLocalApp =
+function inspectLocalApp(callback) {
+    var self = this;
+
+    readDirFiles(self.localApp, 'utf8', callback);
+};
+
+TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
+    var self = this;
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + self.localApp;
+
+    return ThriftGet.exec(text, {
+        logger: self.logger
+    }, cb);
 };
 
 TestCluster.prototype.close = function close(cb) {

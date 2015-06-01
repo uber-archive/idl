@@ -22,13 +22,16 @@
     "process": "0.11.1",
     "read-json": "0.1.0",
     "rimraf": "2.3.4",
-    "string-template": "0.2.1"
+    "string-template": "0.2.1",
+    "text-table": "0.2.0",
+    "xtend": "4.0.0"
   },
   "devDependencies": {
     "fixtures-fs": "2.0.0",
     "istanbul": "^0.3.5",
     "mkdirp": "0.5.1",
     "opn": "^1.0.1",
+    "read-dir-files": "0.1.1",
     "rimraf": "2.3.4",
     "run-parallel": "1.1.1",
     "run-series": "1.1.1",
