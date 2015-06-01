@@ -42,10 +42,6 @@ var HOME = process.env.HOME;
 /*eslint no-console: 0, no-process-exit:0 */
 module.exports = ThriftGet;
 
-if (require.main === module) {
-    main();
-}
-
 function main() {
     var argv = parseArgs(process.argv.slice(2));
     var thriftGet = ThriftGet(argv);
@@ -75,6 +71,7 @@ function ThriftGet(opts) {
     self.remainder = opts._;
     self.command = self.remainder[0];
     self.repository = opts.repository;
+    self.helpFlag = opts.h || opts.help;
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.thrift-god', 'upstream-cache');
@@ -89,6 +86,16 @@ function ThriftGet(opts) {
 
     self.meta = null;
 }
+
+ThriftGet.prototype.help = function help() {
+    console.log('usage: thrift-get --repository=<repo> [--help] [-h]');
+    console.log('                  <command> <args>');
+    console.log('');
+    console.log('Where <command> is one of: ');
+    console.log('  - list');
+    console.log('  - add <name>');
+    console.log('  - update');
+};
 
 ThriftGet.exec = function exec(string, options, cb) {
     if (typeof options === 'function') {
@@ -105,6 +112,10 @@ ThriftGet.exec = function exec(string, options, cb) {
 
 ThriftGet.prototype.processArgs = function processArgs(cb) {
     var self = this;
+
+    if (self.helpFlag) {
+        return self.help();
+    }
 
     self.fetchRepository(onRepository);
 
@@ -329,4 +340,8 @@ function sha1(content) {
     var hash = crypto.createHash('sha1');
     hash.update(content);
     return hash.digest('hex');
+}
+
+if (require.main === module) {
+    main();
 }
