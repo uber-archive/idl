@@ -100,7 +100,7 @@ This project is not done yet:
  - [x] Make `thrift-god` a repeating cron job
  - [x] Support `localFileName` in config.
  - [x] Support `branch` in config.
- - [ ] Implement `thrift-get` binary.
+ - [x] Implement `thrift-get` binary.
 
 ## Installation
 
