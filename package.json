@@ -7,6 +7,10 @@
   "repository": "git://github.com/Raynos/thrift-god.git",
   "main": "index",
   "homepage": "https://github.com/Raynos/thrift-god",
+  "bin": {
+    "thrift-get": "bin/thrift-get.js",
+    "thrift-god": "bin/thrift-god.js"
+  },
   "bugs": {
     "url": "https://github.com/Raynos/thrift-god/issues",
     "email": "raynos2@gmail.com"
