@@ -45,13 +45,13 @@ TestCluster.test('run thrift-get list', {
     }
 });
 
-TestCluster.test('run thrift-get add', {
+TestCluster.test('run thrift-get fetch', {
     config: {}
 }, function t(cluster, assert) {
     parallel({
         upstream: cluster.inspectUpstream.bind(cluster),
-        add: series.bind(null, [
-            cluster.thriftGet.bind(cluster, 'add B'),
+        fetch: series.bind(null, [
+            cluster.thriftGet.bind(cluster, 'fetch B'),
             cluster.inspectLocalApp.bind(cluster)
         ])
     }, onResults);
@@ -60,8 +60,8 @@ TestCluster.test('run thrift-get add', {
         assert.ifError(err);
 
         var upstream = data.upstream;
-        assert.equal(data.add[0], undefined);
-        var files = data.add[1];
+        assert.equal(data.fetch[0], undefined);
+        var files = data.fetch[1];
 
         var meta = JSON.parse(files.thrift['meta.json']);
         // console.log('upstream', upstream.meta);
@@ -84,8 +84,8 @@ TestCluster.test('run thrift-get update', {
     config: {}
 }, function t(cluster, assert) {
     series([
-        cluster.thriftGet.bind(cluster, 'add D'),
-        cluster.thriftGet.bind(cluster, 'add B')
+        cluster.thriftGet.bind(cluster, 'fetch D'),
+        cluster.thriftGet.bind(cluster, 'fetch B')
     ], onAdded);
 
     function onAdded(err) {

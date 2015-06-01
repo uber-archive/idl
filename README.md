@@ -38,17 +38,17 @@ I can run `thrift-get list` to show all available services
 and their IDL files.
 
 If I want to download one of these files I can
-`thrift-get add {service}` and it will fetch the IDL file into
+`thrift-get fetch {service}` and it will fetch the IDL file into
 `./thrift/{service}.thrift`. 
 
-Once you add your first service we also write the
-`./thrift/thrift.json` meta file that contains the version of
+Once you fetch your first service we also write the
+`./thrift/meta.json` meta file that contains the version of
 the file as well as the time it was last changed. 
 
 All thrift files are under one version; If you want to update
 to the latest version just run `thrift-get update` and it will
 update all thrift files to the latest version as well as updating
-the `./thrift/thrift.json`.
+the `./thrift/meta.json`.
 
 Since the thrift definitions define the interfaces of the services
 in production, there is only one version for all files. When you
