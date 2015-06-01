@@ -250,7 +250,15 @@ function update(cb) {
         var remotes = Object.keys(meta.remotes);
         parallel(remotes.map(function buildThunk(remote) {
             return self.add.bind(self, remote);
-        }), cb);
+        }), onFini);
+    }
+
+    function onFini(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        cb(null);
     }
 };
 
