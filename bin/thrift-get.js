@@ -31,6 +31,7 @@ var DebugLogtron = require('debug-logtron');
 var extend = require('xtend');
 var textTable = require('text-table');
 var readJSON = require('read-json');
+var parallel = require('run-parallel');
 
 var gitexec = require('../git-exec.js');
 var ThriftMetaFile = require('../thrift-meta-file.js');
@@ -66,6 +67,10 @@ function ThriftGet(opts) {
     }
 
     var self = this;
+
+    if (!opts.repository) {
+        throw new Error('--repository is required');
+    }
 
     self.remainder = opts._;
     self.command = self.remainder[0];
@@ -114,7 +119,13 @@ ThriftGet.prototype.processArgs = function processArgs(cb) {
                 break;
 
             case 'add':
-                self.add(cb);
+                var name = self.remainder[1];
+
+                if (!name) {
+                    return cb(new Error('must specify name to add'));
+                }
+
+                self.add(name, cb);
                 break;
 
             case 'update':
@@ -157,14 +168,8 @@ ListText.prototype.toString = function toString() {
     return textTable(tuples);
 };
 
-ThriftGet.prototype.add = function add(cb) {
+ThriftGet.prototype.add = function add(name, cb) {
     var self = this;
-
-    var name = self.remainder[1];
-
-    if (!name) {
-        return cb(new Error('must specify name to add'));
-    }
 
     // TODO read remote meta data and do properly
     var destination = path.join(
@@ -213,6 +218,26 @@ ThriftGet.prototype.add = function add(cb) {
         }
 
         cb(null);
+    }
+};
+
+ThriftGet.prototype.update =
+function update(cb) {
+    var self = this;
+
+    var metaFile = path.join(self.cwd, 'thrift', 'meta.json');
+    readJSON(metaFile, onMeta);
+
+    function onMeta(err, meta) {
+        if (err) {
+            // no meta file; nothing to do
+            return cb(null);
+        }
+
+        var remotes = Object.keys(meta.remotes);
+        parallel(remotes.map(function buildThunk(remote) {
+            return self.add.bind(self, remote);
+        }), cb);
     }
 };
 
@@ -283,7 +308,8 @@ function pullRepository(cb) {
     var command = 'git fetch --all';
     gitexec(command, {
         cwd: cwd,
-        logger: self.logger
+        logger: self.logger,
+        ignoreStderr: true
     }, onFetch);
 
     function onFetch(err) {

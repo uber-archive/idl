@@ -71,7 +71,11 @@ ThriftMetaFile.prototype.updateRecord =
 function updateRecord(folderName, opts, callback) {
     var self = this;
 
-    self._lastDate = opts.time ? new Date(opts.time) : new Date();
+
+    var newDate = opts.time ? new Date(opts.time) : new Date();
+    if (+newDate > +self._lastDate) {
+        self._lastDate = newDate;
+    }
 
     self._remotes[folderName] = {
         time: self._lastDate.toISOString(),
