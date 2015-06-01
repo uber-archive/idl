@@ -79,3 +79,68 @@ TestCluster.test('run thrift-get add', {
         assert.end();
     }
 });
+
+TestCluster.test('run thrift-get update', {
+    config: {}
+}, function t(cluster, assert) {
+    series([
+        cluster.thriftGet.bind(cluster, 'add D'),
+        cluster.thriftGet.bind(cluster, 'add B')
+    ], onAdded)
+
+    function onAdded(err) {
+        assert.ifError(err);
+
+        cluster.updateRemote('B', {
+            thrift: {
+                'service.thrift': '' +
+                    'service B {\n' +
+                    '    i32 echo(1:i32 value)\n' +
+                    '    i64 echo64(1:i64 value)\n' +
+                    '}\n'
+            }
+        }, onUpdated);
+    }
+
+    function onUpdated(err) {
+        assert.ifError(err);
+
+        cluster.timers.advance(30 * 1000 + 5);
+        cluster.thriftGod.once('fetchedRemotes', onRemotes);
+    }
+
+    function onRemotes() {
+        cluster.thriftGet('update', onUpdate);
+    }
+
+    function onUpdate(err) {
+        assert.ifError(err);
+
+        parallel({
+            upstream: cluster.inspectUpstream.bind(cluster),
+            local: cluster.inspectLocalApp.bind(cluster)
+        }, onInspect);
+    }
+
+    function onInspect(err, data) {
+        assert.ifError(err);
+
+        var local = data.local;
+        var upstream = data.upstream;
+
+        var meta = JSON.parse(local.thrift['meta.json']);
+
+        assert.equal(meta.time, upstream.meta.remotes.B.time);
+        assert.equal(meta.version,
+            new Date(upstream.meta.remotes.B.time).getTime()
+        );
+
+        assert.deepEqual(meta.remotes.B, upstream.meta.remotes.B);
+        assert.deepEqual(meta.remotes.D, upstream.meta.remotes.D);
+
+        assert.equal(local.thrift['B.thrift'], upstream.remotes.B);
+        assert.equal(local.thrift['D.thrift'], upstream.remotes.D);
+
+        assert.end();
+    }
+});
