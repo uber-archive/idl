@@ -242,7 +242,9 @@ function _processThriftFile(remote, thriftFile, callback) {
             return callback(err);
         }
 
-        self.meta.updateRecord(remote.folderName, newSha, onUpdated);
+        self.meta.updateRecord(remote.folderName, {
+            sha: newSha
+        }, onUpdated);
     }
 
     function onUpdated(err) {
