@@ -94,7 +94,7 @@ ThriftGet.exec = function exec(string, options, cb) {
 ThriftGet.prototype.processArgs = function processArgs(cb) {
     var self = this;
 
-    if (self.helpFlag) {
+    if (self.helpFlag || self.command === 'help') {
         return self.help();
     }
 
