@@ -100,10 +100,12 @@ function _pullAndUpdate(remote, callback) {
 
     var cwd = path.join(self.cacheLocation, remote.folderName);
 
-    var command = 'git fetch ' +
-        '--depth 1 ' +
-        'origin ' +
-        remote.branch;
+    // TODO: do an efficient fetch
+    // var command = 'git fetch ' +
+    //     '--depth 1 ' +
+    //     'origin ' +
+    //     remote.branch;
+    var command = 'git fetch --all';
     gitexec(command, {
         cwd: cwd,
         logger: self.logger,
