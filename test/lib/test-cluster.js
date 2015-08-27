@@ -16,7 +16,7 @@ var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
 var ThriftGod = require('../../bin/thrift-god.js');
-var ThriftGet = require('../../bin/thrift-get.js');
+var ThriftStore = require('../../bin/thrift-store.js');
 
 var defaultRepos = {
     'A': {
@@ -305,7 +305,7 @@ TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
 
-    return ThriftGet.exec(text, {
+    return ThriftStore.exec(text, {
         logger: self.logger
     }, cb);
 };
