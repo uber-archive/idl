@@ -22,6 +22,7 @@
 
 var readJSON = require('read-json');
 var fs = require('fs');
+var setImmediate = require('timers').setImmediate;
 
 module.exports = ThriftMetaFile;
 
@@ -82,6 +83,18 @@ function updateRecord(folderName, opts, callback) {
     };
 
     self._writeFile(callback);
+};
+
+// a lock should be set that delays this if updateRecord is in progress
+ThriftMetaFile.prototype.getDependencies =
+function getDependencies(callback) {
+    var self = this;
+
+    setImmediate(onNextTick);
+
+    function onNextTick() {
+        callback(null, self._remotes);
+    }
 };
 
 ThriftMetaFile.prototype._writeFile = function _writeFile(callback) {

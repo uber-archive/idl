@@ -34,6 +34,8 @@ var extend = require('xtend');
 var textTable = require('text-table');
 var readJSON = require('read-json');
 var parallel = require('run-parallel');
+var rimraf = require('rimraf');
+var ncp = require('ncp');
 
 var gitexec = require('../git-exec.js');
 var ThriftMetaFile = require('../thrift-meta-file.js');
@@ -42,11 +44,11 @@ var ThriftMetaFile = require('../thrift-meta-file.js');
 var HOME = process.env.HOME;
 
 /*eslint no-console: 0, no-process-exit:0 */
-module.exports = ThriftGet;
+module.exports = ThriftStore;
 
 function main() {
     var argv = parseArgs(process.argv.slice(2));
-    var thriftGet = ThriftGet(argv);
+    var thriftGet = ThriftStore(argv);
     thriftGet.processArgs(function onFini(err, text) {
         if (err) {
             console.error('ERR: ' + err);
@@ -59,9 +61,9 @@ function main() {
     });
 }
 
-function ThriftGet(opts) {
-    if (!(this instanceof ThriftGet)) {
-        return new ThriftGet(opts);
+function ThriftStore(opts) {
+    if (!(this instanceof ThriftStore)) {
+        return new ThriftStore(opts);
     }
 
     var self = this;
@@ -86,33 +88,53 @@ function ThriftGet(opts) {
         self.cacheDir, self.repoHash
     );
 
+    self.metaFilename = 'meta.json';
+    self.thriftFolder = 'thrift';
+    self.thriftExtension = '.thrift';
+
     self.meta = null;
 }
 
-ThriftGet.prototype.help = function help() {
-    console.log('usage: thrift-get --repository=<repo> [--help] [-h]');
-    console.log('                  <command> <args>');
-    console.log('');
-    console.log('Where <command> is one of: ');
-    console.log('  - list');
-    console.log('  - fetch <name>');
-    console.log('  - update');
-};
+ThriftStore.prototype.help = help;
+ThriftStore.prototype.processArgs = processArgs;
 
-ThriftGet.exec = function exec(string, options, cb) {
+ThriftStore.prototype.list = list;
+ThriftStore.prototype.fetch = fetch;
+ThriftStore.prototype.install = install;
+ThriftStore.prototype.publish = publish;
+ThriftStore.prototype.update = update;
+ThriftStore.prototype.getServiceName = getServiceName;
+ThriftStore.prototype.fetchRepository = fetchRepository;
+ThriftStore.prototype.cloneRepository = cloneRepository;
+ThriftStore.prototype.pullRepository = pullRepository;
+
+ThriftStore.exec = function exec(string, options, cb) {
     if (typeof options === 'function') {
         cb = options;
         options = {};
     }
 
     var opts = extend(options, parseArgs(string.split(' ')));
-    var thriftGet = ThriftGet(opts);
+    var thriftStore = ThriftStore(opts);
 
-    thriftGet.processArgs(cb);
-    return thriftGet;
+    thriftStore.processArgs(cb);
+    return thriftStore;
 };
 
-ThriftGet.prototype.processArgs = function processArgs(cb) {
+function help() {
+    var helpText = [
+        'usage: thrift-store --repository=<repo> [--help] [-h]',
+        '                    <command> <args>',
+        '',
+        'Where <command> is one of:',
+        '  - list',
+        '  - fetch <name>',
+        '  - update'
+    ].join('\n');
+    console.log(helpText);
+}
+
+function processArgs(cb) {
     var self = this;
 
     if (self.helpFlag || self.command === 'help') {
@@ -150,47 +172,185 @@ ThriftGet.prototype.processArgs = function processArgs(cb) {
                 break;
         }
     }
-};
+}
 
-ThriftGet.prototype.list = function list(cb) {
+function list(cb) {
     var self = this;
 
     return cb(null, ListText(self.meta));
-};
-
-function ListText(meta) {
-    if (!(this instanceof ListText)) {
-        return new ListText(meta);
-    }
-
-    var self = this;
-
-    self.remotes = meta.remotes;
 }
 
-ListText.prototype.toString = function toString() {
+function install(service, cb) {
     var self = this;
 
-    var tuples = Object.keys(self.remotes)
-        .map(function toTuple(remoteKey) {
-            var remote = self.remotes[remoteKey];
+    // if !service, read from meta.json
 
-            return [' - ' + remoteKey, remote.time];
+    var relativeServicePath = path.join(self.thriftFolder, service);
+
+    var destination = path.join(self.cwd, relativeServicePath);
+    var source = path.join(self.repoCacheLocation, relativeServicePath);
+
+    rimraf(path.dirname(destination), onRimRaf);
+
+    function onRimRaf(err) {
+        if (err) {
+            return cb(err);
+        }
+        mkdirp(path.dirname(destination), onDir);
+    }
+
+    function onDir(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        ncp(source, destination, onCopied);
+    }
+
+    function onCopied(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var installedMetaFile = ThriftMetaFile({
+            fileName: path.join(destination, self.metaFilename)
         });
 
-    return textTable(tuples);
-};
+        installedMetaFile.readFile(onInstalledMetaFileRead);
 
-ThriftGet.prototype.fetch = function fetch(name, cb) {
+        function onInstalledMetaFileRead(readErr) {
+            if (readErr) {
+                return cb(readErr);
+            }
+
+            installedMetaFile.getDependencies(onDependencies);
+        }
+    }
+
+    function onDependencies(err, dependencies) {
+        if (err) {
+            return cb(err);
+        }
+
+        var dependenciesInstallers = Object.keys(dependencies)
+            .map(makeInstaller);
+
+        function makeInstaller(dependency) {
+            return function installDependency(callback) {
+                install(dependency, callback);
+            };
+        }
+
+        dependenciesInstallers.push(onInstalled);
+
+        parallel(dependenciesInstallers);
+    }
+
+    function onInstalled() {
+        var metaFile = ThriftMetaFile({
+            fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
+        });
+
+        metaFile.readFile(onFileRead);
+
+        function onFileRead(err) {
+            if (err) {
+                return cb(err);
+            }
+
+            metaFile.updateRecord(service, {
+                sha: self.meta.remotes[service].sha,
+                time: self.meta.remotes[service].time
+            }, onMetaUpdated);
+        }
+    }
+
+    function onMetaUpdated(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        cb(null);
+    }
+
+}
+
+function publish(cb) {
+    var self = this;
+    var destination;
+    var source;
+    var service;
+
+    self.getServiceName(onServiceName);
+
+    function onServiceName(err, serviceName) {
+        if (err) {
+            return cb(err);
+        }
+
+        service = serviceName;
+
+        var relativeServicePath = path.join(self.thriftFolder, service);
+
+        destination = path.join(self.repoCacheLocation, relativeServicePath);
+        source = path.join(self.cwd, relativeServicePath);
+
+        rimraf(path.dirname(destination), onRimRaf);
+    }
+
+    function onRimRaf(err) {
+        if (err) {
+            return cb(err);
+        }
+        mkdirp(path.dirname(destination), onDir);
+    }
+
+    function onDir(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        ncp(source, destination, onCopied);
+    }
+
+    function onCopied() {
+        var metaFile = ThriftMetaFile({
+            fileName: path.join(self.repoCacheLocation, self.metaFilename)
+        });
+
+        metaFile.readFile(onFileRead);
+
+        function onFileRead(err) {
+            if (err) {
+                return cb(err);
+            }
+
+            metaFile.updateRecord(service, {
+                sha: self.meta.remotes[service].sha,
+                time: self.meta.remotes[service].time
+            }, onMetaUpdated);
+        }
+    }
+
+    function onMetaUpdated(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        cb(null);
+    }
+}
+
+function fetch(name, cb) {
     var self = this;
 
+    var relativeServicePath = path.join(
+        self.thriftFolder, name + self.thriftExtension
+    );
+
     // TODO read remote meta data and do properly
-    var destination = path.join(
-        self.cwd, 'thrift', name + '.thrift'
-    );
-    var source = path.join(
-        self.repoCacheLocation, 'thrift', name + '.thrift'
-    );
+    var destination = path.join(self.cwd, relativeServicePath);
+    var source = path.join(self.repoCacheLocation, relativeServicePath);
 
     mkdirp(path.dirname(destination), onDir);
 
@@ -208,7 +368,7 @@ ThriftGet.prototype.fetch = function fetch(name, cb) {
 
     function onFinish() {
         var metaFile = ThriftMetaFile({
-            fileName: path.join(self.cwd, 'thrift', 'meta.json')
+            fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
         });
 
         metaFile.readFile(onFileRead);
@@ -232,13 +392,12 @@ ThriftGet.prototype.fetch = function fetch(name, cb) {
 
         cb(null);
     }
-};
+}
 
-ThriftGet.prototype.update =
 function update(cb) {
     var self = this;
 
-    var metaFile = path.join(self.cwd, 'thrift', 'meta.json');
+    var metaFile = path.join(self.cwd, self.thriftFolder, self.metaFilename);
     readJSON(metaFile, onMeta);
 
     function onMeta(err, meta) {
@@ -260,9 +419,8 @@ function update(cb) {
 
         cb(null);
     }
-};
+}
 
-ThriftGet.prototype.fetchRepository =
 function fetchRepository(cb) {
     var self = this;
 
@@ -282,7 +440,7 @@ function fetchRepository(cb) {
         }
 
         var metaFileName = path.join(
-            self.repoCacheLocation, 'meta.json'
+            self.repoCacheLocation, self.metaFilename
         );
         readJSON(metaFileName, onMeta);
     }
@@ -295,9 +453,8 @@ function fetchRepository(cb) {
         self.meta = meta;
         cb(null);
     }
-};
+}
 
-ThriftGet.prototype.cloneRepository =
 function cloneRepository(cb) {
     var self = this;
 
@@ -319,9 +476,8 @@ function cloneRepository(cb) {
             ignoreStderr: true
         }, cb);
     }
-};
+}
 
-ThriftGet.prototype.pullRepository =
 function pullRepository(cb) {
     var self = this;
 
@@ -344,7 +500,58 @@ function pullRepository(cb) {
             logger: self.logger
         }, cb);
     }
-};
+}
+
+function getServiceName(cb) {
+    var self = this;
+
+    var command = 'git remote --verbose';
+    gitexec(command, {
+        cwd: self.cwd,
+        logger: self.logger,
+        ignoreStderr: true
+    }, onVerboseRemote);
+
+    function onVerboseRemote(err, stdout, stderr) {
+        if (err) {
+            return cb(err);
+        }
+
+        // this works for both HTTPS and SSH git remotes
+        var gitUrl = stdout
+            .split(/\s/)[1]     // get the first git url
+            .split('@')[1]      // drop everything before the username
+            .split('.git')[0]   // drop .git suffix if one
+            .replace(':', '/'); // convert to valid path
+
+        cb(null, gitUrl);
+    }
+}
+
+function ListText(meta) {
+    if (!(this instanceof ListText)) {
+        return new ListText(meta);
+    }
+
+    var self = this;
+
+    self.remotes = meta.remotes;
+}
+
+ListText.prototype.toString = toString;
+
+function toString() {
+    var self = this;
+
+    var tuples = Object.keys(self.remotes)
+        .map(function toTuple(remoteKey) {
+            var remote = self.remotes[remoteKey];
+
+            return [' - ' + remoteKey, remote.time];
+        });
+
+    return textTable(tuples);
+}
 
 function sha1(content) {
     var hash = crypto.createHash('sha1');
