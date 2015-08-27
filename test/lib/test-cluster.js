@@ -20,6 +20,7 @@ var ThriftStore = require('../../bin/thrift-store.js');
 
 var defaultRepos = {
     'A': {
+        gitUrl: 'git@github.com:org/a',
         branch: 'master',
         files: {
             'thrift': {
@@ -32,6 +33,7 @@ var defaultRepos = {
         localFileName: 'thrift/service.thrift'
     },
     'B': {
+        gitUrl: 'git@github.com:org/b',
         branch: 'master',
         files: {
             'thrift': {
@@ -44,6 +46,7 @@ var defaultRepos = {
         localFileName: 'thrift/service.thrift'
     },
     'C': {
+        gitUrl: 'git@github.com:org/c',
         branch: 'master',
         files: {
             'thrift': {
@@ -56,6 +59,7 @@ var defaultRepos = {
         localFileName: 'thrift/service.thrift'
     },
     'D': {
+        gitUrl: 'git@github.com:org/d',
         branch: 'master',
         files: {
             'thrift': {
@@ -130,9 +134,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
     series([
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
-        createFixtures.bind(
-            null, self.remotesDir, self.repoFixtures
-        ),
+        createFixtures.bind(null, self.remotesDir, self.repoFixtures),
         self.gitify.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
@@ -152,23 +154,18 @@ TestCluster.prototype.gitify = function gitify(cb) {
         var cwd = path.join(self.remotesDir, remoteKey);
 
         return function thunk(callback) {
+            var gitOpts = {
+                cwd: cwd
+            };
+
             series([
-                git('init', {
-                    cwd: cwd
-                }),
-                git('commit --allow-empty -am "initial"', {
-                    cwd: cwd
-                }),
+                git('init', gitOpts),
+                git('remote add origin ' + repoInfo.gitUrl, gitOpts),
+                git('commit --allow-empty -am "initial"', gitOpts),
                 repoInfo.branch !== 'master' ?
-                    git('checkout -b ' + repoInfo.branch, {
-                        cwd: cwd
-                    }) : null,
-                git('add --all .', {
-                    cwd: cwd
-                }),
-                git('commit -am "second"', {
-                    cwd: cwd
-                })
+                    git('checkout -b ' + repoInfo.branch, gitOpts) : null,
+                git('add --all .', gitOpts),
+                git('commit -am "second"', gitOpts)
             ].filter(Boolean), callback);
         };
     });
