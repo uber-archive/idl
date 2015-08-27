@@ -1,0 +1,20 @@
+{
+  "linters": {
+    "chmod": {
+      "type": "chmod",
+      "include" : "(.*)"
+    },
+    "filename": {
+      "type": "filename",
+      "include" : "(.*)"
+    },
+    "json": {
+      "type": "json",
+      "include": "(\\.json$)"
+    },
+    "merge-conflict": {
+      "type": "merge-conflict",
+      "include" : "(.*)"
+    }
+  }
+}
