@@ -25,7 +25,6 @@
 var parseArgs = require('minimist');
 var process = require('process');
 var console = require('console');
-var crypto = require('crypto');
 var path = require('path');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
@@ -38,7 +37,9 @@ var rimraf = require('rimraf');
 var ncp = require('ncp');
 
 var gitexec = require('../git-exec.js');
+var ServiceName = require('../service-name');
 var ThriftMetaFile = require('../thrift-meta-file.js');
+var sha1 = require('../hasher').sha1;
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
@@ -81,7 +82,7 @@ function ThriftStore(opts) {
         path.join(HOME, '.thrift-god', 'upstream-cache');
     self.cwd = opts.cwd || process.cwd();
 
-    self.logger = opts.logger || DebugLogtron('thriftgod');
+    self.logger = opts.logger || DebugLogtron('thriftstore');
 
     self.repoHash = sha1(self.repository);
     self.repoCacheLocation = path.join(
@@ -93,6 +94,8 @@ function ThriftStore(opts) {
     self.thriftExtension = '.thrift';
 
     self.meta = null;
+
+    self.getServiceName = ServiceName(self.logger);
 }
 
 ThriftStore.prototype.help = help;
@@ -103,7 +106,6 @@ ThriftStore.prototype.fetch = fetch;
 ThriftStore.prototype.install = install;
 ThriftStore.prototype.publish = publish;
 ThriftStore.prototype.update = update;
-ThriftStore.prototype.getServiceName = getServiceName;
 ThriftStore.prototype.fetchRepository = fetchRepository;
 ThriftStore.prototype.cloneRepository = cloneRepository;
 ThriftStore.prototype.pullRepository = pullRepository;
@@ -161,6 +163,20 @@ function processArgs(cb) {
                 }
 
                 self.fetch(name, cb);
+                break;
+
+            case 'install':
+                var service = self.remainder[1];
+
+                if (!service) {
+                    return cb(new Error('must specify service to install'));
+                }
+
+                self.fetch(service, cb);
+                break;
+
+            case 'publish':
+                self.publish(cb);
                 break;
 
             case 'update':
@@ -236,14 +252,12 @@ function install(service, cb) {
             .map(makeInstaller);
 
         function makeInstaller(dependency) {
-            return function installDependency(callback) {
+            return function installDependencyThunk(callback) {
                 install(dependency, callback);
             };
         }
 
-        dependenciesInstallers.push(onInstalled);
-
-        parallel(dependenciesInstallers);
+        parallel(dependenciesInstallers, onInstalled);
     }
 
     function onInstalled() {
@@ -281,7 +295,7 @@ function publish(cb) {
     var source;
     var service;
 
-    self.getServiceName(onServiceName);
+    self.getServiceName(self.cwd, onServiceName);
 
     function onServiceName(err, serviceName) {
         if (err) {
@@ -295,7 +309,7 @@ function publish(cb) {
         destination = path.join(self.repoCacheLocation, relativeServicePath);
         source = path.join(self.cwd, relativeServicePath);
 
-        rimraf(path.dirname(destination), onRimRaf);
+        rimraf(destination, onRimRaf);
     }
 
     function onRimRaf(err) {
@@ -317,26 +331,28 @@ function publish(cb) {
         var metaFile = ThriftMetaFile({
             fileName: path.join(self.repoCacheLocation, self.metaFilename)
         });
+        // console.dir(self.meta);
+        metaFile.readFile(onMetaUpdated);
 
-        metaFile.readFile(onFileRead);
+        // function onFileRead(err) {
+        //     if (err) {
+        //         return cb(err);
+        //     }
 
-        function onFileRead(err) {
-            if (err) {
-                return cb(err);
-            }
-
-            metaFile.updateRecord(service, {
-                sha: self.meta.remotes[service].sha,
-                time: self.meta.remotes[service].time
-            }, onMetaUpdated);
-        }
+        //     metaFile.updateRecord(service, {
+        //         sha: self.meta.remotes[service].sha,
+        //         time: self.meta.remotes[service].time
+        //     }, onMetaUpdated);
+        // }
     }
 
     function onMetaUpdated(err) {
         if (err) {
             return cb(err);
         }
-
+        // self.logger.info('Published service Thrift IDL files', {
+        //     service: service
+        // });
         cb(null);
     }
 }
@@ -439,10 +455,10 @@ function fetchRepository(cb) {
             return cb(err);
         }
 
-        var metaFileName = path.join(
+        var metaFilePath = path.join(
             self.repoCacheLocation, self.metaFilename
         );
-        readJSON(metaFileName, onMeta);
+        readJSON(metaFilePath, onMeta);
     }
 
     function onMeta(err, meta) {
@@ -502,32 +518,6 @@ function pullRepository(cb) {
     }
 }
 
-function getServiceName(cb) {
-    var self = this;
-
-    var command = 'git remote --verbose';
-    gitexec(command, {
-        cwd: self.cwd,
-        logger: self.logger,
-        ignoreStderr: true
-    }, onVerboseRemote);
-
-    function onVerboseRemote(err, stdout, stderr) {
-        if (err) {
-            return cb(err);
-        }
-
-        // this works for both HTTPS and SSH git remotes
-        var gitUrl = stdout
-            .split(/\s/)[1]     // get the first git url
-            .split('@')[1]      // drop everything before the username
-            .split('.git')[0]   // drop .git suffix if one
-            .replace(':', '/'); // convert to valid path
-
-        cb(null, gitUrl);
-    }
-}
-
 function ListText(meta) {
     if (!(this instanceof ListText)) {
         return new ListText(meta);
@@ -551,12 +541,6 @@ function toString() {
         });
 
     return textTable(tuples);
-}
-
-function sha1(content) {
-    var hash = crypto.createHash('sha1');
-    hash.update(content);
-    return hash.digest('hex');
 }
 
 if (require.main === module) {

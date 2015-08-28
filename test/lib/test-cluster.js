@@ -37,61 +37,17 @@ var readDirFiles = require('read-dir-files').read;
 
 var ThriftGod = require('../../bin/thrift-god.js');
 var ThriftStore = require('../../bin/thrift-store.js');
+var thriftIdl = require('./thrift-idl');
+var defineFixture = require('./define-fixture');
 
-var defaultRepos = {
-    'A': {
-        gitUrl: 'git@github.com:org/a',
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service A {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'B': {
-        gitUrl: 'git@github.com:org/b',
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service B {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'C': {
-        gitUrl: 'git@github.com:org/c',
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service C {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'D': {
-        gitUrl: 'git@github.com:org/d',
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service D {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    }
-};
+var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});
+
+function makeFixture(memo, letter) {
+    memo[letter] = defineFixture({
+        name: letter
+    });
+    return memo;
+}
 
 TestCluster.test = wrapCluster(tape, TestCluster);
 
@@ -155,7 +111,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
         createFixtures.bind(null, self.remotesDir, self.repoFixtures),
-        self.gitify.bind(self),
+        self.gitifyRemotes.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
         self.prepareOnly ? null : self.setupThriftGod.bind(self)
@@ -165,33 +121,35 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
 // git init
 // git a .
 // git commit -m 'initial'
-TestCluster.prototype.gitify = function gitify(cb) {
+TestCluster.prototype.gitifyRemotes = function gitifyRemotes(cb) {
     var self = this;
 
     var keys = Object.keys(self.remoteRepos);
     var tasks = keys.map(function buildThunk(remoteKey) {
         var repoInfo = self.remoteRepos[remoteKey];
         var cwd = path.join(self.remotesDir, remoteKey);
-
-        return function thunk(callback) {
-            var gitOpts = {
-                cwd: cwd
-            };
-
-            series([
-                git('init', gitOpts),
-                git('remote add origin ' + repoInfo.gitUrl, gitOpts),
-                git('commit --allow-empty -am "initial"', gitOpts),
-                repoInfo.branch !== 'master' ?
-                    git('checkout -b ' + repoInfo.branch, gitOpts) : null,
-                git('add --all .', gitOpts),
-                git('commit -am "second"', gitOpts)
-            ].filter(Boolean), callback);
-        };
+        return makeGitifyThunk(cwd, repoInfo);
     });
 
     return parallel(tasks, cb);
 };
+
+function makeGitifyThunk(cwd, repoInfo) {
+    return function gitifyThunk(callback) {
+        var gitOpts = {
+            cwd: cwd
+        };
+        series([
+            git('init', gitOpts),
+            git('remote add origin ' + repoInfo.gitUrl, gitOpts),
+            git('commit --allow-empty -am "initial"', gitOpts),
+            repoInfo.branch !== 'master' ?
+                git('checkout -b ' + repoInfo.branch, gitOpts) : null,
+            git('add --all .', gitOpts),
+            git('commit -am "second"', gitOpts)
+        ].filter(Boolean), callback);
+    };
+}
 
 TestCluster.prototype.updateRemote =
 function updateRemote(name, files, callback) {
@@ -321,6 +279,20 @@ TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
+
+    return ThriftStore.exec(text, {
+        logger: self.logger
+    }, cb);
+};
+
+TestCluster.prototype.thriftStorePublish =
+function thriftStorePublish(cwd, cb) {
+    var self = this;
+    var text = 'publish';
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + cwd;
 
     return ThriftStore.exec(text, {
         logger: self.logger

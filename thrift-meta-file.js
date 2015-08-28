@@ -68,6 +68,17 @@ ThriftMetaFile.prototype.getSha = function getSha(folderName) {
     return remote.sha;
 };
 
+ThriftMetaFile.prototype.getShasums = function getShasums(folderName) {
+    var self = this;
+
+    var remote = self._remotes[folderName];
+    if (!remote) {
+        return null;
+    }
+
+    return remote.shasums;
+};
+
 ThriftMetaFile.prototype.updateRecord =
 function updateRecord(folderName, opts, callback) {
     var self = this;
@@ -79,7 +90,8 @@ function updateRecord(folderName, opts, callback) {
 
     self._remotes[folderName] = {
         time: self._lastDate.toISOString(),
-        sha: opts.sha
+        sha: opts.sha,
+        shasums: opts.shasums
     };
 
     self._writeFile(callback);
