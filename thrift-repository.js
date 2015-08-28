@@ -30,7 +30,7 @@ var deepEqual = require('deep-equal');
 
 var RemoteCache = require('./remote-cache.js');
 var ThriftMetaFile = require('./thrift-meta-file.js');
-var gitexec = require('./git-exec.js');
+var gitexec = require('./git-process.js').exec;
 var ServiceName = require('./service-name');
 var sha1 = require('./hasher').sha1;
 var shasumFiles = require('./hasher').shasumFiles;

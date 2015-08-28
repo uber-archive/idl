@@ -20,7 +20,7 @@
 
 'use strict';
 
-var gitexec = require('./git-exec.js');
+var gitexec = require('./git-process.js').exec;
 
 module.exports = ServiceName;
 

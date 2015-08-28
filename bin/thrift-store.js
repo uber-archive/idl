@@ -35,11 +35,14 @@ var readJSON = require('read-json');
 var parallel = require('run-parallel');
 var rimraf = require('rimraf');
 var ncp = require('ncp');
+var template = require('string-template');
 
-var gitexec = require('../git-exec.js');
+var gitexec = require('../git-process.js').spawn;
+var gitspawn = require('../git-process.js').spawn;
 var ServiceName = require('../service-name');
 var ThriftMetaFile = require('../thrift-meta-file.js');
 var sha1 = require('../hasher').sha1;
+var shasumFiles = require('../hasher').shasumFiles;
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
@@ -79,7 +82,7 @@ function ThriftStore(opts) {
     self.helpFlag = opts.h || opts.help;
 
     self.cacheDir = opts.cacheDir ||
-        path.join(HOME, '.thrift-god', 'upstream-cache');
+        path.join(HOME, '.thrift-store', 'upstream-cache');
     self.cwd = opts.cwd || process.cwd();
 
     self.logger = opts.logger || DebugLogtron('thriftstore');
@@ -199,7 +202,7 @@ function list(cb) {
 function install(service, cb) {
     var self = this;
 
-    // if !service, read from meta.json
+    // TODO: if !service, read from meta.json
 
     var relativeServicePath = path.join(self.thriftFolder, service);
 
@@ -273,8 +276,8 @@ function install(service, cb) {
             }
 
             metaFile.updateRecord(service, {
-                sha: self.meta.remotes[service].sha,
-                time: self.meta.remotes[service].time
+                sha: self.meta.toJSON().remotes[service].sha,
+                time: self.meta.toJSON().remotes[service].time
             }, onMetaUpdated);
         }
     }
@@ -294,6 +297,7 @@ function publish(cb) {
     var destination;
     var source;
     var service;
+    var newShasums;
 
     self.getServiceName(self.cwd, onServiceName);
 
@@ -304,10 +308,8 @@ function publish(cb) {
 
         service = serviceName;
 
-        var relativeServicePath = path.join(self.thriftFolder, service);
-
-        destination = path.join(self.repoCacheLocation, relativeServicePath);
-        source = path.join(self.cwd, relativeServicePath);
+        destination = path.join(self.repoCacheLocation, service);
+        source = path.join(self.cwd, self.thriftFolder, service);
 
         rimraf(destination, onRimRaf);
     }
@@ -327,34 +329,105 @@ function publish(cb) {
         ncp(source, destination, onCopied);
     }
 
-    function onCopied() {
+    function onCopied(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        shasumFiles(source, onShasums);
+    }
+
+    function onShasums(err, shasums) {
+        if (err) {
+            return cb(err);
+        }
+
+        newShasums = shasums;
+
         var metaFile = ThriftMetaFile({
             fileName: path.join(self.repoCacheLocation, self.metaFilename)
         });
-        // console.dir(self.meta);
-        metaFile.readFile(onMetaUpdated);
 
-        // function onFileRead(err) {
-        //     if (err) {
-        //         return cb(err);
-        //     }
+        metaFile.readFile(onFileRead);
 
-        //     metaFile.updateRecord(service, {
-        //         sha: self.meta.remotes[service].sha,
-        //         time: self.meta.remotes[service].time
-        //     }, onMetaUpdated);
-        // }
+        function onFileRead(err) {
+            if (err) {
+                return cb(err);
+            }
+            // console.dir(self.meta);
+            metaFile.updateRecord(service, {
+                shasums: shasums
+            }, onMetaUpdated);
+        }
     }
 
     function onMetaUpdated(err) {
         if (err) {
             return cb(err);
         }
-        // self.logger.info('Published service Thrift IDL files', {
-        //     service: service
-        // });
-        cb(null);
+
+        var files = Object.keys(newShasums).map(function(filename) {
+            return path.join(destination, filename);
+        }).join(' ');
+
+        var command = 'git add ' +
+            self.meta.fileName + ' ' +
+            files;
+        gitexec(command, {
+            cwd: self.repoCacheLocation,
+            logger: self.logger
+        }, onAdded);
     }
+
+    function onAdded(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        // TODO: git tag whenever we update
+        var message = template('Updating {remote} to latest version', {
+            remote: service
+        });
+        var command = 'git commit ' +
+            '-m "' + message + '"';
+        gitexec(command, {
+            cwd: self.repoCacheLocation,
+            logger: self.logger
+        }, onCommit);
+    }
+
+    function onCommit(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var currTime = new Date();
+
+        var command = 'git tag ' +
+            'v' + currTime.getTime() + ' ' +
+            '-am "' + currTime.toISOString() + '"';
+        gitexec(command, {
+            cwd: self.repoCacheLocation,
+            logger: self.logger
+        }, onTag);
+    }
+
+    function onTag(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var command = 'git push origin master --tags';
+        gitexec(command, {
+            cwd: self.repoCacheLocation,
+            logger: self.logger,
+            ignoreStderr: true
+        }, cb);
+    }
+
+    // self.logger.info('Published service Thrift IDL files', {
+    //     service: service
+    // });
 }
 
 function fetch(name, cb) {
@@ -395,8 +468,8 @@ function fetch(name, cb) {
             }
 
             metaFile.updateRecord(name, {
-                sha: self.meta.remotes[name].sha,
-                time: self.meta.remotes[name].time
+                sha: self.meta.toJSON().remotes[name].sha,
+                time: self.meta.toJSON().remotes[name].time
             }, onMetaUpdated);
         }
     }
@@ -455,19 +528,11 @@ function fetchRepository(cb) {
             return cb(err);
         }
 
-        var metaFilePath = path.join(
-            self.repoCacheLocation, self.metaFilename
-        );
-        readJSON(metaFilePath, onMeta);
-    }
+        self.meta = ThriftMetaFile({
+            fileName: path.join(self.repoCacheLocation, self.metaFilename)
+        });
 
-    function onMeta(err, meta) {
-        if (err) {
-            return cb(err);
-        }
-
-        self.meta = meta;
-        cb(null);
+        self.meta.readFile(cb);
     }
 }
 
@@ -525,7 +590,7 @@ function ListText(meta) {
 
     var self = this;
 
-    self.remotes = meta.remotes;
+    self.remotes = meta.toJSON().remotes;
 }
 
 ListText.prototype.toString = toString;

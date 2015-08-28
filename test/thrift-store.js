@@ -136,7 +136,8 @@ TestCluster.test('run `thrift-store publish`', {
             assert.ifError(err);
         }
 
-        // console.dir(upstream);
+        // console.log(JSON.stringify(upstream, null, '    '));
+
         assert.end();
     }
 });

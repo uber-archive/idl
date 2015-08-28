@@ -70,7 +70,7 @@ function ThriftGod(opts) {
         return self.help();
     }
 
-    self.logger = opts.logger || DebugLogtron('thriftgod');
+    self.logger = opts.logger || DebugLogtron('thriftstore');
     self.timers = opts.timers || globalTimers;
     self.configFile = opts['config-file'] || opts.configFile;
     assert(self.configFile, '--config-file is required');
@@ -137,8 +137,8 @@ ThriftGod.prototype.repeat = function repeat() {
 };
 
 ThriftGod.prototype.help = function help() {
-    console.log('usage: thrift-god [--help] [-h]');
-    console.log('                  --config-file=<file>');
+    console.log('usage: thrift-store [--help] [-h]');
+    console.log('                    --config-file=<file>');
 };
 
 ThriftGod.prototype.destroy = function destroy() {
@@ -172,10 +172,10 @@ function ThriftGodConfig(data) {
     self.fetchInterval = data.fetchInterval;
 
     self.repositoryFolder = data.repositoryFolder || path.join(
-        os.tmpDir(), 'thrift-god', new Date().toISOString()
+        os.tmpDir(), 'thrift-store', new Date().toISOString()
     );
     self.cacheLocation = data.cacheLocation || path.join(
-        HOME, '.thrift-god', 'remote-cache'
+        HOME, '.thrift-store', 'remote-cache'
     );
 
     self.remotes = [];

@@ -99,7 +99,7 @@ function TestCluster(opts) {
             })
     }, opts.config || {});
 
-    self.logger = DebugLogtron('thriftgod');
+    self.logger = DebugLogtron('thriftstore');
     self.timers = TimeMock(0);
     self.thriftGod = null;
 }
