@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var mkdirp = require('mkdirp');
 
-var gitexec = require('./git-exec.js');
+var gitexec = require('./git-process.js').exec;
 
 module.exports = RemoteCache;
 

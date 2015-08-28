@@ -17,6 +17,7 @@ function ThriftMetaFile(opts) {
 
     self._lastDate = null;
     self._remotes = null;
+    self._version = null;
 }
 
 ThriftMetaFile.prototype.readFile = function readFile(cb) {
@@ -33,6 +34,9 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
         }
 
         self._remotes = meta.remotes;
+        self._version = meta.version;
+        self._lastDate = new Date(meta.time);
+
         cb(null);
     }
 };
@@ -88,6 +92,16 @@ function getDependencies(callback) {
         callback(null, self._remotes);
     }
 };
+
+ThriftMetaFile.prototype.toJSON = function toJSON() {
+    var self = this;
+
+    return {
+        time: self._lastDate.toISOString(),
+        version: self._lastDate.getTime(),
+        remotes: self._remotes
+    };
+}
 
 ThriftMetaFile.prototype._writeFile = function _writeFile(callback) {
     var self = this;
