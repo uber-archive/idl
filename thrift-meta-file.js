@@ -18,6 +18,7 @@ function ThriftMetaFile(opts) {
     self._lastDate = null;
     self._remotes = null;
     self._version = null;
+    self._shasums = null;
 }
 
 ThriftMetaFile.prototype.readFile = function readFile(cb) {
@@ -36,6 +37,7 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
         self._remotes = meta.remotes;
         self._version = meta.version;
         self._lastDate = new Date(meta.time);
+        self._shasums = meta.shasums;
 
         cb(null);
     }
@@ -63,14 +65,21 @@ ThriftMetaFile.prototype.getShasums = function getShasums(folderName) {
     return remote.shasums;
 };
 
-ThriftMetaFile.prototype.updateRecord =
-function updateRecord(folderName, opts, callback) {
+ThriftMetaFile.prototype._updateVersion = function version(opts) {
+    opts = opts || {};
     var self = this;
-
     var newDate = opts.time ? new Date(opts.time) : new Date();
     if (+newDate > +self._lastDate) {
         self._lastDate = newDate;
     }
+};
+
+ThriftMetaFile.prototype.updateRecord =
+function updateRecord(folderName, opts, callback) {
+    opts = opts || {};
+    var self = this;
+
+    self._updateVersion(opts);
 
     self._remotes[folderName] = {
         time: self._lastDate.toISOString(),
@@ -78,7 +87,15 @@ function updateRecord(folderName, opts, callback) {
         shasums: opts.shasums
     };
 
-    self._writeFile(callback);
+    self.save(callback);
+};
+
+ThriftMetaFile.prototype.publish = function publish(opts, callback) {
+    opts = opts || {};
+    var self = this;
+    self._updateVersion(opts);
+    self._shasums = opts.shasums || {};
+    self.save(callback);
 };
 
 // a lock should be set that delays this if updateRecord is in progress
@@ -96,25 +113,24 @@ function getDependencies(callback) {
 ThriftMetaFile.prototype.toJSON = function toJSON() {
     var self = this;
 
-    return {
-        time: self._lastDate.toISOString(),
-        version: self._lastDate.getTime(),
-        remotes: self._remotes
-    };
-}
-
-ThriftMetaFile.prototype._writeFile = function _writeFile(callback) {
-    var self = this;
-
     var date = self._lastDate;
 
-    var newContent = JSON.stringify({
-        version: date.getTime(),
+    return {
         time: date.toISOString(),
-        remotes: self._remotes
-    }, null, '    ') + '\n';
+        version: date.getTime(),
+        remotes: self._remotes,
+        shasums: self._shasums
+    };
+};
 
-    fs.writeFile(self.fileName, newContent, 'utf8', callback);
+ThriftMetaFile.prototype.toJSONString = function toJSONString() {
+    var self = this;
+    return JSON.stringify(self.toJSON(), null, 4) + '\n'
+};
+
+ThriftMetaFile.prototype.save = function save(callback) {
+    var self = this;
+    fs.writeFile(self.fileName, self.toJSONString(), 'utf8', callback);
 };
 
 ThriftMetaFile.prototype.time = function time() {

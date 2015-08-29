@@ -154,7 +154,7 @@ function processArgs(cb) {
                     return cb(new Error('must specify service to install'));
                 }
 
-                self.fetch(service, cb);
+                self.install(service, cb);
                 break;
 
             case 'publish':
@@ -180,14 +180,20 @@ function list(cb) {
 
 function install(service, cb) {
     var self = this;
-
     // TODO: if !service, read from meta.json
 
-    var relativeServicePath = path.join(self.thriftFolder, service);
+    var destination = path.join(self.cwd, self.thriftFolder, service);
+    var source = path.join(self.repoCacheLocation, service);
 
-    var destination = path.join(self.cwd, relativeServicePath);
-    var source = path.join(self.repoCacheLocation, relativeServicePath);
+    var clientMetaFile = ThriftMetaFile({
+        fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
+    });
 
+    var installedMetaFile = ThriftMetaFile({
+        fileName: path.join(destination, self.metaFilename)
+    });
+    console.log(destination);
+    console.log(source);
     rimraf(path.dirname(destination), onRimRaf);
 
     function onRimRaf(err) {
@@ -209,10 +215,6 @@ function install(service, cb) {
         if (err) {
             return cb(err);
         }
-
-        var installedMetaFile = ThriftMetaFile({
-            fileName: path.join(destination, self.metaFilename)
-        });
 
         installedMetaFile.readFile(onInstalledMetaFileRead);
 
@@ -242,21 +244,23 @@ function install(service, cb) {
         parallel(dependenciesInstallers, onInstalled);
     }
 
-    function onInstalled() {
-        var metaFile = ThriftMetaFile({
-            fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
-        });
+    function onInstalled(err) {
+        if (err) {
+            return cb(err);
+        }
 
-        metaFile.readFile(onFileRead);
+        clientMetaFile.readFile(onClientMetaFileRead);
 
-        function onFileRead(err) {
+        function onClientMetaFileRead(err) {
             if (err) {
                 return cb(err);
             }
 
-            metaFile.updateRecord(service, {
-                sha: self.meta.toJSON().remotes[service].sha,
-                time: self.meta.toJSON().remotes[service].time
+            var installedMeta = installedMetaFile.toJSON();
+
+            clientMetaFile.updateRecord(service, {
+                shasums: installedMeta.shasums,
+                time: installedMeta.time
             }, onMetaUpdated);
         }
     }
@@ -277,6 +281,8 @@ function publish(cb) {
     var source;
     var service;
     var newShasums;
+    var publishedMetaFile;
+    var destinationMetaFilepath;
 
     self.getServiceName(self.cwd, onServiceName);
 
@@ -323,24 +329,58 @@ function publish(cb) {
 
         newShasums = shasums;
 
-        var metaFile = ThriftMetaFile({
-            fileName: path.join(self.repoCacheLocation, self.metaFilename)
+        self.meta.updateRecord(service, {
+            shasums: shasums
+        }, onRegistryMetaUpdated);
+    }
+
+    function onRegistryMetaUpdated(err) {
+        if (err) {
+            return cb(err);
+        }
+        publishedMetaFile = ThriftMetaFile({
+            fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
         });
 
-        metaFile.readFile(onFileRead);
+        publishedMetaFile.readFile(onFileRead);
 
         function onFileRead(err) {
             if (err) {
                 return cb(err);
             }
-            // console.dir(self.meta);
-            metaFile.updateRecord(service, {
-                shasums: shasums
-            }, onMetaUpdated);
+            publishedMetaFile.publish({
+                shasums: newShasums
+            }, onPublishedMetaFileWritten);
         }
     }
 
-    function onMetaUpdated(err) {
+    function onPublishedMetaFileWritten(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        fs.readFile(publishedMetaFile.fileName, 'utf8', onPublishedRead);
+
+        function onPublishedRead(err2, content) {
+            if (err2) {
+                return cb(err2);
+            }
+
+            destinationMetaFilepath = path.join(
+                destination,
+                self.metaFilename
+            );
+
+            fs.writeFile(
+                destinationMetaFilepath,
+                content,
+                'utf8',
+                onMetaPublished
+            );
+        }
+    }
+
+    function onMetaPublished(err) {
         if (err) {
             return cb(err);
         }
@@ -351,6 +391,7 @@ function publish(cb) {
 
         var command = 'git add ' +
             self.meta.fileName + ' ' +
+            destinationMetaFilepath + ' ' +
             files;
         gitexec(command, {
             cwd: self.repoCacheLocation,
