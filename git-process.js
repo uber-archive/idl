@@ -59,19 +59,19 @@ function gitspawn(command, options, callback) {
     options = options || {};
     assert(options && options.logger, 'logger required');
     var commandParts = splitargs(command);
-    // console.log(command);
+    console.log(command);
     var git = spawn(commandParts.shift(), commandParts, options);
 
     git.stdout.on('data', function (data) {
-        // console.log('stdout: ' + data);
+        console.log('stdout: ' + data);
     });
 
     git.stderr.on('data', function (data) {
-        // console.log('stderr: ' + data);
+        console.log('stderr: ' + data);
     });
 
     git.once('close', function (code) {
-        // console.log('git exited with code ' + code);
+        console.log('git exited with code ' + code);
         callback();
     });
 
