@@ -27,6 +27,5 @@ function ServiceName(logger) {
 
             cb(null, gitUrl);
         }
-    }
+    };
 }
-

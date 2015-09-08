@@ -2,7 +2,7 @@
 
 var parallel = require('run-parallel');
 var series = require('run-series');
-var console = require('console');
+// var console = require('console');
 var path = require('path');
 
 var TestCluster = require('./lib/test-cluster.js');
@@ -40,13 +40,18 @@ TestCluster.test('run `thrift-store list`', {}, function t(cluster, assert) {
 
         assert.equal(text, '' +
             ' - A                 ' + upstream.meta.remotes.A.time + '\n' +
-            ' - github.com/org/a  ' + upstream.meta.remotes['github.com/org/a'].time + '\n' +
+            ' - github.com/org/a  ' + upstream.meta.remotes['github.com/org/a']
+                .time + '\n' +
             ' - B                 ' + upstream.meta.remotes.B.time + '\n' +
-            ' - github.com/org/b  ' + upstream.meta.remotes['github.com/org/b'].time + '\n' +
+            ' - github.com/org/b  ' + upstream.meta.remotes['github.com/org/b']
+                .time + '\n' +
             ' - C                 ' + upstream.meta.remotes.C.time + '\n' +
-            ' - github.com/org/c  ' + upstream.meta.remotes['github.com/org/c'].time + '\n' +
+            ' - github.com/org/c  ' + upstream.meta.remotes['github.com/org/c']
+                .time + '\n' +
             ' - D                 ' + upstream.meta.remotes.D.time + '\n' +
-            ' - github.com/org/d  ' + upstream.meta.remotes['github.com/org/d'].time
+            ' - github.com/org/d  ' + upstream.meta.remotes['github.com/org/d']
+
+                .time
         );
 
         assert.end();
@@ -87,6 +92,30 @@ TestCluster.test('run `thrift-store fetch`', {}, function t(cluster, assert) {
         assert.end();
     }
 });
+
+// TestCluster.test('run `thrift-store install`', {
+// }, function t(cluster, assert) {
+
+//     cluster.thriftStoreInstall('github.com/org/b', onInstalled);
+
+//     function onInstalled(err, data) {
+//         if (err) {
+//             assert.ifError(err);
+//         }
+
+//         cluster.inspectUpstream(onInspectUpstream);
+//     }
+
+//     function onInspectUpstream(err, upstream) {
+//         if (err) {
+//             assert.ifError(err);
+//         }
+
+//         // console.log(JSON.stringify(upstream, null, '    '));
+//         throw 'foo';
+//         assert.end();
+//     }
+// });
 
 TestCluster.test('run `thrift-store publish`', {
     prepareOnly: false

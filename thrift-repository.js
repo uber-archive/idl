@@ -379,9 +379,7 @@ function _processThriftFiles(remote, callback) {
             return callback(err);
         }
 
-        var files = Object.keys(newShasums).map(function(filename) {
-            return path.join(destination, filename);
-        }).join(' ');
+        var files = Object.keys(newShasums).map(getFilepath).join(' ');
 
         var command = 'git add ' +
             self.meta.fileName + ' ' +
@@ -390,6 +388,10 @@ function _processThriftFiles(remote, callback) {
             cwd: self.repositoryFolder,
             logger: self.logger
         }, onAdded);
+
+        function getFilepath(filename) {
+            return path.join(destination, filename);
+        }
     }
 
     function onAdded(err) {
