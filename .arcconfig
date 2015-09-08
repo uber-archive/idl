@@ -1,6 +1,5 @@
 {
   "phabricator.uri": "https://code.uberinternal.com/",
-  "project.name": "rt/thrift-registry",
   "repository.callsign": "RTTHRIFTS",
   "git.default-relative-commit": "origin/master"
 }

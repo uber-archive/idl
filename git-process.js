@@ -19,13 +19,12 @@
 // THE SOFTWARE.
 
 'use strict';
-
+/*eslint-disable no-console*/
 var assert = require('assert');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var console = require('console');
 var splitargs = require('splitargs');
-var parseArgs = require('minimist');
 
 module.exports.exec = gitexec;
 module.exports.spawn = gitspawn;
@@ -59,18 +58,18 @@ function gitspawn(command, options, callback) {
     options = options || {};
     assert(options && options.logger, 'logger required');
     var commandParts = splitargs(command);
-    console.log(command);
+
     var git = spawn(commandParts.shift(), commandParts, options);
 
-    git.stdout.on('data', function (data) {
+    git.stdout.on('data', function logStdout(data) {
         console.log('stdout: ' + data);
     });
 
-    git.stderr.on('data', function (data) {
+    git.stderr.on('data', function logStderr(data) {
         console.log('stderr: ' + data);
     });
 
-    git.once('close', function (code) {
+    git.once('close', function logExitCode(code) {
         console.log('git exited with code ' + code);
         callback();
     });

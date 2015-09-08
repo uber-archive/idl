@@ -145,7 +145,7 @@ ThriftMetaFile.prototype.toJSON = function toJSON() {
 
 ThriftMetaFile.prototype.toJSONString = function toJSONString() {
     var self = this;
-    return JSON.stringify(self.toJSON(), null, 4) + '\n'
+    return JSON.stringify(self.toJSON(), null, 4) + '\n';
 };
 
 ThriftMetaFile.prototype.save = function save(callback) {

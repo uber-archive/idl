@@ -41,7 +41,8 @@ TestCluster.test('run the thrift-god', {
             'B.thrift\n' +
             'C.thrift\n' +
             'D.thrift\n' +
-            'github.com/\n'
+            'github.com/\n',
+            'Correct thrift file contents'
         );
         assert.equal(data.gitlog,
             'Updating D to latest version\n' +
@@ -56,24 +57,45 @@ TestCluster.test('run the thrift-god', {
             'Updating A to latest version\n' +
             'Updating A to latest version ' +
                 'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
-            'initial\n'
+            'initial\n',
+            'Correct git log contents'
         );
 
-        assert.equal(data.meta.time,
-            data.meta.remotes['github.com/org/d'].time);
-        assert.equal(new Date(data.meta.time).getTime(),
-            data.meta.version);
+        assert.equal(
+            data.meta.time,
+            data.meta.remotes['github.com/org/d'].time,
+            'Correct timestamp on last update'
+        );
+        assert.equal(
+            new Date(data.meta.time).getTime(),
+            data.meta.version,
+            'Version is correct and is a timestamp'
+        );
 
-        assert.equal(data.meta.remotes.A.sha,
-            'd329c8c24d0871076a5f05180a439bccb9bebe71');
-        assert.equal(data.meta.remotes.B.sha,
-            '424a6ca9b4660bf432045eeba7a3254ab38d5701');
-        assert.equal(data.meta.remotes.C.sha,
-            '484742978a072e46ae1131d8efe7fe0377d35c54');
-        assert.equal(data.meta.remotes.D.sha,
-            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
+        assert.equal(
+            data.meta.remotes.A.sha,
+            'd329c8c24d0871076a5f05180a439bccb9bebe71',
+            'Correct shasum for remote A'
+        );
+        assert.equal(
+            data.meta.remotes.B.sha,
+            '424a6ca9b4660bf432045eeba7a3254ab38d5701',
+            'Correct shasum for remote B'
+        );
+        assert.equal(
+            data.meta.remotes.C.sha,
+            '484742978a072e46ae1131d8efe7fe0377d35c54',
+            'Correct shasum for remote C'
+        );
+        assert.equal(
+            data.meta.remotes.D.sha,
+            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d',
+            'Correct shasum for remote D'
+        );
 
-        assert.deepEqual(data.remotes, {
+        assert.deepEqual(
+            data.remotes,
+            {
             'A':
                 'service A {\n' +
                 '    i32 echo(1:i32 value)\n' +
@@ -90,7 +112,9 @@ TestCluster.test('run the thrift-god', {
                 'service D {\n' +
                 '    i32 echo(1:i32 value)\n' +
                 '}\n'
-        });
+            },
+            'Correct thrift definition for each remote'
+        );
 
         var remotes = data.meta.remotes;
         assert.equal(data.gittag, '' +
@@ -430,13 +454,17 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
         var tags = data.gittag.trim().split('\n');
 
         assert.equal(tags[0], 'v' + new Date(remotes.A.time).getTime());
-        assert.equal(tags[1], 'v' + new Date(remotes['github.com/org/a'].time).getTime());
+        assert.equal(tags[1], 'v' + new Date(remotes['github.com/org/a'].time)
+            .getTime());
         assert.equal(tags[4], 'v' + new Date(remotes.C.time).getTime());
-        assert.equal(tags[5], 'v' + new Date(remotes['github.com/org/c'].time).getTime());
+        assert.equal(tags[5], 'v' + new Date(remotes['github.com/org/c'].time)
+            .getTime());
         assert.equal(tags[6], 'v' + new Date(remotes.D.time).getTime());
-        assert.equal(tags[7], 'v' + new Date(remotes['github.com/org/d'].time).getTime());
+        assert.equal(tags[7], 'v' + new Date(remotes['github.com/org/d'].time)
+            .getTime());
         assert.equal(tags[8], 'v' + new Date(remotes.B.time).getTime());
-        assert.equal(tags[9], 'v' + new Date(remotes['github.com/org/b'].time).getTime());
+        assert.equal(tags[9], 'v' + new Date(remotes['github.com/org/b'].time)
+            .getTime());
 
         assert.end();
     }

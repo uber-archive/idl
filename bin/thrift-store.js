@@ -37,8 +37,8 @@ var rimraf = require('rimraf');
 var ncp = require('ncp');
 var template = require('string-template');
 
-var gitexec = require('../git-process.js').spawn;
-var gitspawn = require('../git-process.js').spawn;
+var gitexec = require('../git-process.js').exec;
+// var gitspawn = require('../git-process.js').spawn;
 var ServiceName = require('../service-name');
 var ThriftMetaFile = require('../thrift-meta-file.js');
 var sha1 = require('../hasher').sha1;
@@ -272,9 +272,9 @@ function install(service, cb) {
 
         clientMetaFile.readFile(onClientMetaFileRead);
 
-        function onClientMetaFileRead(err) {
-            if (err) {
-                return cb(err);
+        function onClientMetaFileRead(readErr) {
+            if (readErr) {
+                return cb(readErr);
             }
 
             var installedMeta = installedMetaFile.toJSON();
@@ -365,9 +365,9 @@ function publish(cb) {
 
         publishedMetaFile.readFile(onFileRead);
 
-        function onFileRead(err) {
-            if (err) {
-                return cb(err);
+        function onFileRead(readErr) {
+            if (readErr) {
+                return cb(readErr);
             }
             publishedMetaFile.publish({
                 shasums: newShasums
@@ -406,9 +406,7 @@ function publish(cb) {
             return cb(err);
         }
 
-        var files = Object.keys(newShasums).map(function(filename) {
-            return path.join(destination, filename);
-        }).join(' ');
+        var files = Object.keys(newShasums).map(getFilepaths).join(' ');
 
         var command = 'git add ' +
             self.meta.fileName + ' ' +
@@ -418,6 +416,10 @@ function publish(cb) {
             cwd: self.repoCacheLocation,
             logger: self.logger
         }, onAdded);
+
+        function getFilepaths(filename) {
+            return path.join(destination, filename);
+        }
     }
 
     function onAdded(err) {

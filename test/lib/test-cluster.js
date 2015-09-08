@@ -37,7 +37,6 @@ var readDirFiles = require('read-dir-files').read;
 
 var ThriftGod = require('../../bin/thrift-god.js');
 var ThriftStore = require('../../bin/thrift-store.js');
-var thriftIdl = require('./thrift-idl');
 var defineFixture = require('./define-fixture');
 
 var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});
@@ -275,6 +274,20 @@ function inspectLocalApp(callback) {
 
 TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
     var self = this;
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + self.localApp;
+
+    return ThriftStore.exec(text, {
+        logger: self.logger
+    }, cb);
+};
+
+TestCluster.prototype.thriftStoreInstall =
+function thriftStoreInstall(moduleName, cb) {
+    var self = this;
+    var text = 'install ' + moduleName;
 
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;

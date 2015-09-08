@@ -53,9 +53,9 @@
     }
   ],
   "scripts": {
-    "test": "npm run jshint -s && npm run cover -s",
+    "test": "npm run lint -s && npm run cover -s",
     "unit-test": "node test/index.js",
-    "jshint": "standard -v",
+    "lint": "standard -v",
     "cover": "istanbul cover --report html --print detail -- test/index.js && npm run check-cover -s",
     "check-cover": "istanbul check-coverage --branches=100 --lines=100 --functions=100 || echo 'coverage failed'",
     "view-cover": "opn ./coverage/index.html",
