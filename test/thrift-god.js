@@ -5,7 +5,6 @@ var defineFixture = require('./lib/define-fixture');
 var thriftIdl = require('./lib/thrift-idl');
 
 TestCluster.test('run the thrift-god', {
-    config: {}
 }, function t(cluster, assert) {
     cluster.inspectUpstream(onUpstream);
 
@@ -18,10 +17,6 @@ TestCluster.test('run the thrift-god', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
                 'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
                 'thrift/github.com/org/b/meta.json',
@@ -36,17 +31,9 @@ TestCluster.test('run the thrift-god', {
 
         assert.equal(data.gitlog,
             'Updating D to latest version\n' +
-            'Updating D to latest version ' +
-                'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d\n' +
             'Updating C to latest version\n' +
-            'Updating C to latest version ' +
-                '484742978a072e46ae1131d8efe7fe0377d35c54\n' +
             'Updating B to latest version\n' +
-            'Updating B to latest version ' +
-                '424a6ca9b4660bf432045eeba7a3254ab38d5701\n' +
             'Updating A to latest version\n' +
-            'Updating A to latest version ' +
-                'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
             'initial\n',
             'Correct git log contents'
         );
@@ -62,59 +49,64 @@ TestCluster.test('run the thrift-god', {
             'Version is correct and is a timestamp'
         );
 
-        assert.equal(
-            data.meta.remotes.A.sha,
-            'd329c8c24d0871076a5f05180a439bccb9bebe71',
-            'Correct shasum for remote A'
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/a'].shasums,
+            {
+                'service.thrift': 'd329c8c24d0871076a5f05180a439bccb9bebe71'
+            },
+            'Correct shasums for remote A'
         );
-        assert.equal(
-            data.meta.remotes.B.sha,
-            '424a6ca9b4660bf432045eeba7a3254ab38d5701',
-            'Correct shasum for remote B'
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/b'].shasums,
+            {
+                'service.thrift': '424a6ca9b4660bf432045eeba7a3254ab38d5701'
+            },
+            'Correct shasums for remote B'
         );
-        assert.equal(
-            data.meta.remotes.C.sha,
-            '484742978a072e46ae1131d8efe7fe0377d35c54',
-            'Correct shasum for remote C'
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/c'].shasums,
+            {
+                'service.thrift': '484742978a072e46ae1131d8efe7fe0377d35c54'
+            },
+            'Correct shasums for remote C'
         );
-        assert.equal(
-            data.meta.remotes.D.sha,
-            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d',
-            'Correct shasum for remote D'
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/d'].shasums,
+            {
+                'service.thrift': 'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d'
+            },
+            'Correct shasums for remote D'
         );
 
-        assert.deepEqual(
-            data.remotes,
-            {
-            'A':
-                'service A {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n',
-            'B':
-                'service B {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n',
-            'C':
-                'service C {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n',
-            'D':
-                'service D {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n'
-            },
-            'Correct thrift definition for each remote'
+        assert.equal(
+            data.files['thrift/github.com/org/a/service.thrift'],
+            thriftIdl('A'),
+            'Correct thrift definition for A'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/b/service.thrift'],
+            thriftIdl('B'),
+            'Correct thrift definition for B'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/c/service.thrift'],
+            thriftIdl('C'),
+            'Correct thrift definition for C'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/d/service.thrift'],
+            thriftIdl('D'),
+            'Correct thrift definition for D'
         );
 
         var remotes = data.meta.remotes;
         assert.equal(data.gittag, '' +
-            'v' + new Date(remotes.A.time).getTime() + '\n' +
             'v' + new Date(remotes['github.com/org/a'].time).getTime() + '\n' +
-            'v' + new Date(remotes.B.time).getTime() + '\n' +
             'v' + new Date(remotes['github.com/org/b'].time).getTime() + '\n' +
-            'v' + new Date(remotes.C.time).getTime() + '\n' +
             'v' + new Date(remotes['github.com/org/c'].time).getTime() + '\n' +
-            'v' + new Date(remotes.D.time).getTime() + '\n' +
             'v' + new Date(remotes['github.com/org/d'].time).getTime() + '\n'
         );
 
@@ -141,11 +133,6 @@ TestCluster.test('run with branches', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
-                'thrift/E.thrift',
                 'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
                 'thrift/github.com/org/b/meta.json',
@@ -160,8 +147,10 @@ TestCluster.test('run with branches', {
             'Upstream contains all expected files'
         );
 
-        assert.equal(data.remotes.E, thriftIdl('E'));
-
+        assert.equal(
+            data.files['thrift/github.com/org/e/service.thrift'],
+            thriftIdl('E')
+        );
         assert.end();
     }
 });
@@ -171,10 +160,9 @@ TestCluster.test('run with custom localFileName', {
         'E': {
             gitUrl: 'git@github.com:org/e',
             branch: 'master',
-            localFileName: 'thrift/foo.thrift',
+            localFileName: 'thrift/github.com/org/e/foo.thrift',
             files: {
                 'thrift': {
-                    'foo.thrift': thriftIdl('E'),
                     'github.com': {
                         'org': {
                             'e': {
@@ -198,11 +186,6 @@ TestCluster.test('run with custom localFileName', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
-                'thrift/E.thrift',
                 'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
                 'thrift/github.com/org/b/meta.json',
@@ -217,85 +200,10 @@ TestCluster.test('run with custom localFileName', {
             'Upstream contains all expected files'
         );
 
-        assert.equal(data.remotes.E, thriftIdl('E'));
-
-        assert.end();
-    }
-});
-
-TestCluster.test('run without thrift file', {
-    remoteRepos: {
-        'E': {
-            gitUrl: 'git@github.com:org/e',
-            localFileName: 'thrift/no.thrift',
-            files: {
-                'thrift': {
-                    'empty.thrift': '',
-                    'github.com': {
-                        'org': {
-                            'e': {
-                                'empty.thrift': ''
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-    prepareOnly: true
-}, function t(cluster, assert) {
-    cluster.logger.whitelist('warn', 'git output');
-    cluster.logger.whitelist('warn', 'git show thrift file failed');
-
-    cluster.setupThriftGod(onSetup);
-
-    function onSetup(err) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        cluster.inspectUpstream(onUpstream);
-    }
-
-    function onUpstream(err, data) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        var items = cluster.logger.items();
-        assert.equal(items.length, 2);
-
-        assert.equal(items[0].fields.msg, 'git output');
-        assert.equal(items[1].fields.msg,
-            'git show thrift file failed');
-        assert.equal(items[1].fields.stderr,
-            'fatal: Path \'thrift/no.thrift\' does not ' +
-                'exist in \'HEAD\'\n');
-
-        assert.deepEqual(
-            Object.keys(data.files).sort(),
-            [
-                'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
-                'thrift/E.thrift',
-                'thrift/github.com/org/a/meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
-                'thrift/github.com/org/d/service.thrift',
-                'thrift/github.com/org/e/empty.thrift',
-                'thrift/github.com/org/e/meta.json'
-            ],
-            'Upstream contains all expected files'
+        assert.equal(
+            data.files['thrift/github.com/org/e/foo.thrift'],
+            thriftIdl('E')
         );
-
-        assert.equal(data.remotes.E, '');
 
         assert.end();
     }
@@ -331,10 +239,6 @@ TestCluster.test('running thrift-god twice', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
                 'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
                 'thrift/github.com/org/b/meta.json',
@@ -349,17 +253,9 @@ TestCluster.test('running thrift-god twice', {
 
         assert.equal(data.gitlog,
             'Updating D to latest version\n' +
-            'Updating D to latest version ' +
-                'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d\n' +
             'Updating C to latest version\n' +
-            'Updating C to latest version ' +
-                '484742978a072e46ae1131d8efe7fe0377d35c54\n' +
             'Updating B to latest version\n' +
-            'Updating B to latest version ' +
-                '424a6ca9b4660bf432045eeba7a3254ab38d5701\n' +
             'Updating A to latest version\n' +
-            'Updating A to latest version ' +
-                'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
             'initial\n'
         );
 
@@ -368,20 +264,41 @@ TestCluster.test('running thrift-god twice', {
         assert.equal(new Date(data.meta.time).getTime(),
             data.meta.version);
 
-        assert.equal(data.meta.remotes.A.sha,
-            'd329c8c24d0871076a5f05180a439bccb9bebe71');
-        assert.equal(data.meta.remotes.B.sha,
-            '424a6ca9b4660bf432045eeba7a3254ab38d5701');
-        assert.equal(data.meta.remotes.C.sha,
-            '484742978a072e46ae1131d8efe7fe0377d35c54');
-        assert.equal(data.meta.remotes.D.sha,
-            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/a'].shasums,
+            {
+                'service.thrift': 'd329c8c24d0871076a5f05180a439bccb9bebe71'
+            },
+            'Correct shasums for remote A'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/b'].shasums,
+            {
+                'service.thrift': '424a6ca9b4660bf432045eeba7a3254ab38d5701'
+            },
+            'Correct shasums for remote B'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/c'].shasums,
+            {
+                'service.thrift': '484742978a072e46ae1131d8efe7fe0377d35c54'
+            },
+            'Correct shasums for remote C'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/d'].shasums,
+            {
+                'service.thrift': 'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d'
+            },
+            'Correct shasums for remote D'
+        );
 
         assert.end();
     }
 });
 
-TestCluster.test('updating a remote', {}, function t(cluster, assert) {
+TestCluster.test('updating a remote', {
+}, function t(cluster, assert) {
 
     var thriftIdlContent = '' +
         'service B {\n' +
@@ -391,7 +308,6 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
 
     cluster.updateRemote('B', {
         thrift: {
-            'service.thrift': thriftIdlContent,
             'github.com': {
                 'org': {
                     'b': {
@@ -422,20 +338,10 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
 
         assert.equal(data.gitlog,
             'Updating B to latest version\n' +
-            'Updating B to latest version ' +
-                'e1359a7f03df1988e8c11b85fe7b59df16ee2806\n' +
             'Updating D to latest version\n' +
-            'Updating D to latest version ' +
-                'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d\n' +
             'Updating C to latest version\n' +
-            'Updating C to latest version ' +
-                '484742978a072e46ae1131d8efe7fe0377d35c54\n' +
             'Updating B to latest version\n' +
-            'Updating B to latest version ' +
-                '424a6ca9b4660bf432045eeba7a3254ab38d5701\n' +
             'Updating A to latest version\n' +
-            'Updating A to latest version ' +
-                'd329c8c24d0871076a5f05180a439bccb9bebe71\n' +
             'initial\n'
         );
 
@@ -448,10 +354,6 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/A.thrift',
-                'thrift/B.thrift',
-                'thrift/C.thrift',
-                'thrift/D.thrift',
                 'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
                 'thrift/github.com/org/b/meta.json',
@@ -464,36 +366,69 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
             'Upstream contains all expected files'
         );
 
-        assert.equal(data.meta.remotes.A.sha,
-            'd329c8c24d0871076a5f05180a439bccb9bebe71');
-        assert.equal(data.meta.remotes.B.sha,
-            'e1359a7f03df1988e8c11b85fe7b59df16ee2806');
-        assert.equal(data.meta.remotes.C.sha,
-            '484742978a072e46ae1131d8efe7fe0377d35c54');
-        assert.equal(data.meta.remotes.D.sha,
-            'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/a'].shasums,
+            {
+                'service.thrift': 'd329c8c24d0871076a5f05180a439bccb9bebe71'
+            },
+            'Correct shasums for remote A'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/b'].shasums,
+            {
+                'service.thrift': 'e1359a7f03df1988e8c11b85fe7b59df16ee2806'
+            },
+            'Correct shasums for remote B'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/c'].shasums,
+            {
+                'service.thrift': '484742978a072e46ae1131d8efe7fe0377d35c54'
+            },
+            'Correct shasums for remote C'
+        );
+        assert.deepEqual(
+            data.meta.remotes['github.com/org/d'].shasums,
+            {
+                'service.thrift': 'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d'
+            },
+            'Correct shasums for remote D'
+        );
 
-        assert.deepEqual(data.remotes, {
-            'A': thriftIdl('A'),
-            'B': thriftIdlContent,
-            'C': thriftIdl('C'),
-            'D': thriftIdl('D')
-        });
+        assert.equal(
+            data.files['thrift/github.com/org/a/service.thrift'],
+            thriftIdl('A'),
+            'Correct thrift definition for A'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/b/service.thrift'],
+            thriftIdlContent,
+            'Correct thrift definition for B'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/c/service.thrift'],
+            thriftIdl('C'),
+            'Correct thrift definition for C'
+        );
+
+        assert.equal(
+            data.files['thrift/github.com/org/d/service.thrift'],
+            thriftIdl('D'),
+            'Correct thrift definition for D'
+        );
 
         var remotes = data.meta.remotes;
         var tags = data.gittag.trim().split('\n');
 
-        assert.equal(tags[0], 'v' + new Date(remotes.A.time).getTime());
-        assert.equal(tags[1], 'v' + new Date(remotes['github.com/org/a'].time)
+        assert.equal(tags[0], 'v' + new Date(remotes['github.com/org/a'].time)
             .getTime());
-        assert.equal(tags[4], 'v' + new Date(remotes.C.time).getTime());
-        assert.equal(tags[5], 'v' + new Date(remotes['github.com/org/c'].time)
+        assert.equal(tags[2], 'v' + new Date(remotes['github.com/org/c'].time)
             .getTime());
-        assert.equal(tags[6], 'v' + new Date(remotes.D.time).getTime());
-        assert.equal(tags[7], 'v' + new Date(remotes['github.com/org/d'].time)
+        assert.equal(tags[3], 'v' + new Date(remotes['github.com/org/d'].time)
             .getTime());
-        assert.equal(tags[8], 'v' + new Date(remotes.B.time).getTime());
-        assert.equal(tags[9], 'v' + new Date(remotes['github.com/org/b'].time)
+        assert.equal(tags[4], 'v' + new Date(remotes['github.com/org/b'].time)
             .getTime());
 
         assert.end();

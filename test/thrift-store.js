@@ -3,11 +3,12 @@
 var parallel = require('run-parallel');
 var series = require('run-series');
 var path = require('path');
-var thriftIdl = require('./lib/thrift-idl');
 
+var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
 
-TestCluster.test('run `thrift-store list`', {}, function t(cluster, assert) {
+TestCluster.test('run `thrift-store list`', {
+}, function t(cluster, assert) {
     parallel({
         list: cluster.thriftGet.bind(cluster, 'list'),
         upstream: cluster.inspectUpstream.bind(cluster)
@@ -22,68 +23,34 @@ TestCluster.test('run `thrift-store list`', {}, function t(cluster, assert) {
         var upstream = data.upstream;
 
         assert.equal(
-            upstream.meta.remotes.A.time, list.remotes.A.time
+            upstream.meta.remotes['github.com/org/a'].time,
+            list.remotes['github.com/org/a'].time
         );
         assert.equal(
-            upstream.meta.remotes.B.time, list.remotes.B.time
+            upstream.meta.remotes['github.com/org/b'].time,
+            list.remotes['github.com/org/b'].time
         );
         assert.equal(
-            upstream.meta.remotes.C.time, list.remotes.C.time
+            upstream.meta.remotes['github.com/org/c'].time,
+            list.remotes['github.com/org/c'].time
         );
         assert.equal(
-            upstream.meta.remotes.D.time, list.remotes.D.time
+            upstream.meta.remotes['github.com/org/d'].time,
+            list.remotes['github.com/org/d'].time
         );
 
         var text = list.toString();
 
-        assert.equal(text, '' +
-            ' - A                 ' + upstream.meta.remotes.A.time + '\n' +
+        assert.equal(
+            text,
             ' - github.com/org/a  ' + upstream.meta.remotes['github.com/org/a']
                 .time + '\n' +
-            ' - B                 ' + upstream.meta.remotes.B.time + '\n' +
             ' - github.com/org/b  ' + upstream.meta.remotes['github.com/org/b']
                 .time + '\n' +
-            ' - C                 ' + upstream.meta.remotes.C.time + '\n' +
             ' - github.com/org/c  ' + upstream.meta.remotes['github.com/org/c']
                 .time + '\n' +
-            ' - D                 ' + upstream.meta.remotes.D.time + '\n' +
             ' - github.com/org/d  ' + upstream.meta.remotes['github.com/org/d']
-
                 .time
-        );
-
-        assert.end();
-    }
-});
-
-TestCluster.test('run `thrift-store fetch`', {}, function t(cluster, assert) {
-    parallel({
-        upstream: cluster.inspectUpstream.bind(cluster),
-        fetch: series.bind(null, [
-            cluster.thriftGet.bind(cluster, 'fetch B'),
-            cluster.inspectLocalApp.bind(cluster)
-        ])
-    }, onResults);
-
-    function onResults(err, data) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        var upstream = data.upstream;
-        assert.equal(data.fetch[0], undefined);
-        var files = data.fetch[1];
-
-        var meta = JSON.parse(files.thrift['meta.json']);
-
-        assert.equal(meta.time, upstream.meta.remotes.B.time);
-        assert.equal(meta.version,
-            new Date(upstream.meta.remotes.B.time).getTime()
-        );
-        assert.deepEqual(meta.remotes.B, upstream.meta.remotes.B);
-
-        assert.equal(
-            files.thrift['B.thrift'], upstream.remotes.B
         );
 
         assert.end();
@@ -170,7 +137,8 @@ TestCluster.test('run `thrift-store publish`', {
     }
 });
 
-TestCluster.test('run `thrift-store update`', {}, function t(cluster, assert) {
+TestCluster.test('run `thrift-store update`', {
+}, function t(cluster, assert) {
     var thriftIdlContent = '' +
         'service B {\n' +
         '    i32 echo(1:i32 value)\n' +
@@ -178,8 +146,8 @@ TestCluster.test('run `thrift-store update`', {}, function t(cluster, assert) {
         '}\n';
 
     series([
-        cluster.thriftGet.bind(cluster, 'fetch D'),
-        cluster.thriftGet.bind(cluster, 'fetch B')
+        cluster.thriftGet.bind(cluster, 'install github.com/org/d'),
+        cluster.thriftGet.bind(cluster, 'install github.com/org/b')
     ], onAdded);
 
     function onAdded(err) {
@@ -189,7 +157,6 @@ TestCluster.test('run `thrift-store update`', {}, function t(cluster, assert) {
 
         cluster.updateRemote('B', {
             thrift: {
-                'service.thrift': thriftIdlContent,
                 'github.com': {
                     'org': {
                         'b': {
@@ -235,16 +202,32 @@ TestCluster.test('run `thrift-store update`', {}, function t(cluster, assert) {
 
         var meta = JSON.parse(local.thrift['meta.json']);
 
-        assert.equal(meta.time, upstream.meta.remotes.B.time);
-        assert.equal(meta.version,
-            new Date(upstream.meta.remotes.B.time).getTime()
+        assert.equal(
+            meta.time,
+            upstream.meta.remotes['github.com/org/b'].time
+        );
+        assert.equal(
+            meta.version,
+            new Date(upstream.meta.remotes['github.com/org/b'].time).getTime()
         );
 
-        assert.deepEqual(meta.remotes.B, upstream.meta.remotes.B);
-        assert.deepEqual(meta.remotes.D, upstream.meta.remotes.D);
+        assert.deepEqual(
+            meta.remotes['github.com/org/b'],
+            upstream.meta.remotes['github.com/org/b']
+        );
+        assert.deepEqual(
+            meta.remotes['github.com/org/d'],
+            upstream.meta.remotes['github.com/org/d']
+        );
 
-        assert.equal(local.thrift['B.thrift'], upstream.remotes.B);
-        assert.equal(local.thrift['D.thrift'], upstream.remotes.D);
+        assert.equal(
+            local.thrift['github.com'].org.b['service.thrift'],
+            upstream.files['thrift/github.com/org/b/service.thrift']
+        );
+        assert.equal(
+            local.thrift['github.com'].org.d['service.thrift'],
+            upstream.files['thrift/github.com/org/d/service.thrift']
+        );
 
         assert.end();
     }

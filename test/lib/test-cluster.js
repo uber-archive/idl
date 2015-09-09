@@ -244,12 +244,6 @@ TestCluster.prototype.inspectUpstream =
 function inspectUpstream(callback) {
     var self = this;
 
-    var keys = self.fetchRemotes ? Object.keys(self.remoteRepos) : [];
-    var remoteTasks = keys.reduce(function b(acc, key) {
-        acc[key] = self.gitshow.bind(self, 'thrift/' + key + '.thrift');
-        return acc;
-    }, {});
-
     parallel({
         gitlog: self.gitlog.bind(self),
         gittag: self.gittag.bind(self),
@@ -264,8 +258,7 @@ function inspectUpstream(callback) {
 
                 cb(null, JSON.parse(file));
             }
-        },
-        remotes: parallel.bind(null, remoteTasks)
+        }
     }, readFiles);
 
     function readFiles(err, results) {
