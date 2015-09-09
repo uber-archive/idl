@@ -48,8 +48,8 @@ function RemoteCache(opts) {
         pullAndUpdate()
     }
 */
-RemoteCache.prototype.fetchThriftFile =
-function fetchThriftFile(remote, callback) {
+RemoteCache.prototype.update =
+function update(remote, callback) {
     var self = this;
 
     if (self.cacheDirExists) {
@@ -86,8 +86,6 @@ RemoteCache.prototype._initialLoad =
 function _initialLoad(remote, callback) {
     var self = this;
 
-    var cwd = self.cacheLocation;
-
     var command = 'git clone ' +
         '--no-checkout ' +
         '--branch ' + remote.branch + ' ' +
@@ -95,29 +93,15 @@ function _initialLoad(remote, callback) {
         remote.repository + ' ' +
         remote.folderName;
     gitexec(command, {
-        cwd: cwd,
+        cwd: self.cacheLocation,
         logger: self.logger,
         ignoreStderr: true
-    }, onCloned);
-
-    function onCloned(err, stdout, stderr) {
-        if (err) {
-            self.logger.error('git clone remote failed', {
-                err: err,
-                stderr: stderr,
-                remote: remote
-            });
-            return callback(err);
-        }
-
-        self._showThriftFile(remote, callback);
-    }
+    }, callback);
 };
 
 RemoteCache.prototype._pullAndUpdate =
 function _pullAndUpdate(remote, callback) {
     var self = this;
-
     var cwd = path.join(self.cacheLocation, remote.folderName);
 
     // TODO: do an efficient fetch
@@ -149,47 +133,6 @@ function _pullAndUpdate(remote, callback) {
         gitexec(command2, {
             cwd: cwd,
             logger: self.logger
-        }, onMerged);
-    }
-
-    function onMerged(err, stdout, stderr) {
-        if (err) {
-            self.logger.error('git merge remote failed', {
-                err: err,
-                stderr: stderr,
-                cwd: cwd,
-                remote: remote
-            });
-            return callback(err);
-        }
-
-        self._showThriftFile(remote, callback);
-    }
-};
-
-// git show HEAD:thrift/service.thrift
-RemoteCache.prototype._showThriftFile =
-function _showThriftFile(remote, callback) {
-    var self = this;
-
-    var cwd = path.join(self.cacheLocation, remote.folderName);
-
-    var command = 'git show HEAD:' + remote.localFileName;
-    gitexec(command, {
-        cwd: cwd,
-        logger: self.logger
-    }, onGitShow);
-
-    function onGitShow(err, stdout, stderr) {
-        if (err) {
-            self.logger.warn('git show thrift file failed', {
-                err: err,
-                stderr: stderr,
-                remote: remote
-            });
-            return callback(null, '');
-        }
-
-        callback(null, String(stdout));
+        }, callback);
     }
 };

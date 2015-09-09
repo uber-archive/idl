@@ -65,8 +65,8 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
 
 ThriftMetaFile.prototype.getSha = function getSha(folderName) {
     var self = this;
-
     var remote = self._remotes[folderName];
+
     if (!remote) {
         return null;
     }
@@ -76,8 +76,8 @@ ThriftMetaFile.prototype.getSha = function getSha(folderName) {
 
 ThriftMetaFile.prototype.getShasums = function getShasums(folderName) {
     var self = this;
-
     var remote = self._remotes[folderName];
+
     if (!remote) {
         return null;
     }
@@ -132,7 +132,6 @@ function getDependencies(callback) {
 
 ThriftMetaFile.prototype.toJSON = function toJSON() {
     var self = this;
-
     var date = self._lastDate;
 
     return {
@@ -155,6 +154,5 @@ ThriftMetaFile.prototype.save = function save(callback) {
 
 ThriftMetaFile.prototype.time = function time() {
     var self = this;
-
     return self._lastDate;
 };

@@ -30,13 +30,11 @@ function defineFixture(opts) {
         branch: opts.branch || 'master',
         files: {
             'thrift': {
-                'service.thrift': thriftIdl(opts.name),
                 'github.com': {
                     'org': {}
                 }
             }
-        },
-        localFileName: 'thrift/service.thrift'
+        }
     };
 
     fixture.files.thrift['github.com'].org[opts.name.toLowerCase()] = {

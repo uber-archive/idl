@@ -34,31 +34,9 @@ var gitexec = require('./git-process.js').exec;
 var ServiceName = require('./service-name');
 var sha1 = require('./hasher').sha1;
 var shasumFiles = require('./hasher').shasumFiles;
-
-var GIT_COMMIT_MESSAGE =
-    'Updating {remote} to latest version {sha}';
+var GitCommands = require('./git-commands');
 
 module.exports = ThriftRepository;
-
-/*  Upstream
-
-    - ./meta.json
-    - ./thrift/{team}/{project}.thrift
-
-    meta.json
-
-    {
-        version: TimeInMilliSeconds,
-        time: ISOString,
-        remotes: {
-            '{team}/{project}': {
-                time: ISOString,
-                sha: SHA1OfFile
-            }
-        }
-    }
-
-*/
 
 function ThriftRepository(opts) {
     if (!(this instanceof ThriftRepository)) {
@@ -181,10 +159,6 @@ function _cloneRepo(callback) {
     }
 };
 
-/*  for each remote {
-        RemoteCache.getThriftFile(remote)
-    }
-*/
 ThriftRepository.prototype.fetchRemotes =
 function fetchRemotes(callback) {
     var self = this;
@@ -198,11 +172,10 @@ function fetchRemotes(callback) {
         }
 
         var remote = remotes.shift();
-        // self._processThriftFiles(remote, onProcessed);
 
-        self.remoteCache.fetchThriftFile(remote, onThriftFile);
+        self.remoteCache.update(remote, onUpdateRemoteCache);
 
-        function onThriftFile(err2, thriftFile) {
+        function onUpdateRemoteCache(err2, thriftFile) {
             if (err2) {
                 self.logger.error('failed to fetch file', {
                     err2: err2,
@@ -210,19 +183,6 @@ function fetchRemotes(callback) {
                 });
                 return callback(err2);
             }
-
-            self._processThriftFile(remote, thriftFile, publishThriftFiles);
-        }
-
-        function publishThriftFiles(err2) {
-            if (err2) {
-                self.logger.error('failed to process thrift file', {
-                    err2: err2,
-                    remote: remote
-                });
-                return callback(err2);
-            }
-
             self._processThriftFiles(remote, onProcessed);
         }
 
@@ -240,108 +200,6 @@ function fetchRemotes(callback) {
     }
 };
 
-/*
-if (sha(newFile) !== currSha) {
-    repo.update(newFile)
-    repo.updateMeta()
-    repo.commit()
-}
-*/
-ThriftRepository.prototype._processThriftFile =
-function _processThriftFile(remote, thriftFile, callback) {
-    var self = this;
-
-    var currentSha = self.meta.getSha(remote.folderName);
-    var newSha = sha1(thriftFile);
-
-    if (currentSha === newSha) {
-        return callback(null);
-    }
-
-    var filePath = path.join(self.thriftFolder, remote.fileName);
-
-    mkdirp(path.dirname(filePath), onDirectory);
-
-    function onDirectory(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        fs.writeFile(filePath, thriftFile, onWritten);
-    }
-
-    function onWritten(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        self.meta.updateRecord(remote.folderName, {
-            sha: newSha
-        }, onUpdated);
-    }
-
-    function onUpdated(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        var command = 'git add ' +
-            self.meta.fileName + ' ' +
-            filePath;
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger
-        }, onAdded);
-    }
-
-    function onAdded(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        // TODO: git tag whenever we update
-        var message = template(GIT_COMMIT_MESSAGE, {
-            remote: remote.folderName,
-            sha: newSha
-        });
-        var command = 'git commit ' +
-            '-m "' + message + '"';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger
-        }, onCommit);
-    }
-
-    function onCommit(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        var currTime = self.meta.time();
-
-        var command = 'git tag ' +
-            'v' + currTime.getTime() + ' ' +
-            '-am "' + currTime.toISOString() + '"';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger
-        }, onTag);
-    }
-
-    function onTag(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        var command = 'git push origin master --tags';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger,
-            ignoreStderr: true
-        }, callback);
-    }
-};
-
 ThriftRepository.prototype._processThriftFiles =
 function _processThriftFiles(remote, callback) {
     var self = this;
@@ -351,6 +209,7 @@ function _processThriftFiles(remote, callback) {
     var service;
     var publishedMetaFile;
     var destinationMetaFilepath;
+    var time = new Date();
 
     var remotePath = remote.repository.replace('file://', '');
     self.getServiceName(remotePath, onServiceName);
@@ -400,7 +259,8 @@ function _processThriftFiles(remote, callback) {
         }
 
         self.meta.updateRecord(service, {
-            shasums: newShasums
+            shasums: newShasums,
+            time: time
         }, onRegistryMetaUpdated);
     }
 
@@ -423,7 +283,8 @@ function _processThriftFiles(remote, callback) {
                 return callback(readErr);
             }
             publishedMetaFile.publish({
-                shasums: newShasums
+                shasums: newShasums,
+                time: time
             }, onPublishedMetaFileWritten);
         }
     }
@@ -459,65 +320,21 @@ function _processThriftFiles(remote, callback) {
             return callback(err);
         }
 
-        var files = Object.keys(newShasums).map(getFilepath).join(' ');
+        var files = [
+            self.meta.fileName,
+            destinationMetaFilepath
+        ].concat(Object.keys(newShasums).map(getFilepath));
 
-        var command = 'git add ' +
-            self.meta.fileName + ' ' +
-            destinationMetaFilepath + ' ' +
-            files;
-        gitexec(command, {
+        GitCommands.addCommitTagAndPushToOrigin({
+            files: files,
+            service: remote.folderName,
+            timestamp: self.meta.time(),
             cwd: self.repositoryFolder,
             logger: self.logger
-        }, onAdded);
+        }, callback);
 
         function getFilepath(filename) {
             return path.join(destination, filename);
         }
-    }
-
-    function onAdded(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        // TODO: git tag whenever we update
-        var message = template('Updating {remote} to latest version', {
-            remote: remote.folderName
-        });
-        var command = 'git commit ' +
-            '-m "' + message + '"';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger
-        }, onCommit);
-    }
-
-    function onCommit(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        var currTime = self.meta.time();
-
-        var command = 'git tag ' +
-            'v' + currTime.getTime() + ' ' +
-            '-am "' + currTime.toISOString() + '"';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger
-        }, onTag);
-    }
-
-    function onTag(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        var command = 'git push origin master --tags';
-        gitexec(command, {
-            cwd: self.repositoryFolder,
-            logger: self.logger,
-            ignoreStderr: true
-        }, callback);
     }
 };
