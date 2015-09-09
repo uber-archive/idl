@@ -158,6 +158,7 @@ function processArgs(cb) {
                 break;
 
             case 'publish':
+
                 self.publish(cb);
                 break;
 
@@ -183,7 +184,11 @@ function install(service, cb) {
     // TODO: if !service, read from meta.json
 
     var destination = path.join(self.cwd, self.thriftFolder, service);
-    var source = path.join(self.repoCacheLocation, service);
+    var source = path.join(
+        self.repoCacheLocation,
+        self.thriftFolder,
+        service
+    );
 
     var clientMetaFile = ThriftMetaFile({
         fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
@@ -192,8 +197,7 @@ function install(service, cb) {
     var installedMetaFile = ThriftMetaFile({
         fileName: path.join(destination, self.metaFilename)
     });
-    console.log(destination);
-    console.log(source);
+
     rimraf(path.dirname(destination), onRimRaf);
 
     function onRimRaf(err) {
@@ -293,7 +297,11 @@ function publish(cb) {
 
         service = serviceName;
 
-        destination = path.join(self.repoCacheLocation, service);
+        destination = path.join(
+            self.repoCacheLocation,
+            self.thriftFolder,
+            service
+        );
         source = path.join(self.cwd, self.thriftFolder, service);
 
         rimraf(destination, onRimRaf);
