@@ -67,7 +67,9 @@ function TestCluster(opts) {
             acc[name] = self.remoteRepos[name].files;
             return acc;
         }, {});
+
     self.prepareOnly = opts.prepareOnly || false;
+    self.fetchRemotes = opts.fetchRemotes === false ? false : true;
 
     self.fixturesDir = path.join(__dirname, '..', 'fixtures');
     self.remotesDir = path.join(self.fixturesDir, 'remotes');
@@ -206,7 +208,7 @@ function setupThriftGod(cb) {
         logger: self.logger,
         timers: self.timers
     });
-    self.thriftGod.bootstrap(cb);
+    self.thriftGod.bootstrap(self.fetchRemotes, cb);
 };
 
 TestCluster.prototype.gitlog = function gitlog(cb) {
@@ -236,11 +238,33 @@ TestCluster.prototype.gittag = function gittag(cb) {
     }, cb);
 };
 
+TestCluster.prototype.gitlsfiles = function gitlsfiles(cb) {
+    var self = this;
+
+    var command = 'git ls-tree --full-tree -r HEAD';
+    exec(command, {
+        cwd: self.upstreamDir
+    }, onlsfiles);
+
+    function onlsfiles(err, stdout, stderr) {
+        if (err) {
+            return cb(err);
+        }
+
+        var files = stdout.trim().split('\n').map(parseFilepaths);
+        cb(null, files);
+    }
+
+    function parseFilepaths(file) {
+        return file.split(/\s/)[3];
+    }
+};
+
 TestCluster.prototype.inspectUpstream =
 function inspectUpstream(callback) {
     var self = this;
 
-    var keys = Object.keys(self.remoteRepos);
+    var keys = self.fetchRemotes ? Object.keys(self.remoteRepos) : [];
     var remoteTasks = keys.reduce(function b(acc, key) {
         acc[key] = self.gitshow.bind(self, 'thrift/' + key + '.thrift');
         return acc;
@@ -249,6 +273,7 @@ function inspectUpstream(callback) {
     parallel({
         gitlog: self.gitlog.bind(self),
         gittag: self.gittag.bind(self),
+        gitlsfiles: self.gitlsfiles.bind(self),
         meta: function thunk(cb) {
             self.gitshow('meta.json', onFile);
 
@@ -260,9 +285,29 @@ function inspectUpstream(callback) {
                 cb(null, JSON.parse(file));
             }
         },
-        thrift: self.gitshow.bind(self, 'thrift'),
         remotes: parallel.bind(null, remoteTasks)
-    }, callback);
+    }, readFiles);
+
+    function readFiles(err, results) {
+        if (err) {
+            return callback(err);
+        }
+
+        var fileTasks = results.gitlsfiles.reduce(function b(acc, file) {
+            acc[file] = self.gitshow.bind(self, file);
+            return acc;
+        }, {});
+
+        parallel(fileTasks, function onFiles(readFilesErr, files) {
+            if (readFilesErr) {
+                return callback(readFilesErr);
+            }
+
+            results.files = files;
+
+            callback(null, results);
+        });
+    }
 };
 
 TestCluster.prototype.inspectLocalApp =

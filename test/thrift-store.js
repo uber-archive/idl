@@ -22,12 +22,10 @@
 
 var parallel = require('run-parallel');
 var series = require('run-series');
-// var console = require('console');
 var path = require('path');
+var thriftIdl = require('./lib/thrift-idl');
 
 var TestCluster = require('./lib/test-cluster.js');
-
-/*eslint no-console: 0*/
 
 TestCluster.test('run `thrift-store list`', {}, function t(cluster, assert) {
     parallel({
@@ -97,7 +95,6 @@ TestCluster.test('run `thrift-store fetch`', {}, function t(cluster, assert) {
         var files = data.fetch[1];
 
         var meta = JSON.parse(files.thrift['meta.json']);
-        // console.log('upstream', upstream.meta);
 
         assert.equal(meta.time, upstream.meta.remotes.B.time);
         assert.equal(meta.version,
@@ -113,32 +110,47 @@ TestCluster.test('run `thrift-store fetch`', {}, function t(cluster, assert) {
     }
 });
 
-// TestCluster.test('run `thrift-store install`', {
-// }, function t(cluster, assert) {
+TestCluster.test('run `thrift-store install`', {
+}, function t(cluster, assert) {
 
-//     cluster.thriftStoreInstall('github.com/org/b', onInstalled);
+    series([
+        cluster.thriftStoreInstall.bind(cluster, 'github.com/org/b'),
+        parallel.bind(null, {
+            upstream: cluster.inspectUpstream.bind(cluster),
+            localApp: cluster.inspectLocalApp.bind(cluster)
+        })
+    ], onResults);
 
-//     function onInstalled(err, data) {
-//         if (err) {
-//             assert.ifError(err);
-//         }
+    function onResults(err, results) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var localApp = results[1].localApp;
+        var upstream = results[1].upstream;
 
-//         cluster.inspectUpstream(onInspectUpstream);
-//     }
+        var installedThriftFile =
+            localApp.thrift['github.com'].org.b['service.thrift'];
+        var installedMetaFile =
+            JSON.parse(localApp.thrift['github.com'].org.b['meta.json']);
+        // var localAppMetaFile = JSON.parse(localApp.thrift['meta.json']);
 
-//     function onInspectUpstream(err, upstream) {
-//         if (err) {
-//             assert.ifError(err);
-//         }
+        assert.equal(
+            installedThriftFile,
+            upstream.files['thrift/github.com/org/b/service.thrift'],
+            'Correct thrift file installed'
+        );
+        assert.deepEqual(
+            installedMetaFile.shasums,
+            upstream.meta.remotes['github.com/org/b'].shasums,
+            'Correct files and shasums for installed module'
+        );
 
-//         // console.log(JSON.stringify(upstream, null, '    '));
-//         throw 'foo';
-//         assert.end();
-//     }
-// });
+        assert.end();
+    }
+});
 
 TestCluster.test('run `thrift-store publish`', {
-    prepareOnly: false
+    fetchRemotes: false
 }, function t(cluster, assert) {
 
     var tasks = Object.keys(cluster.remoteRepos).map(makePublishThunk);
@@ -150,22 +162,29 @@ TestCluster.test('run `thrift-store publish`', {
         };
     }
 
-    series(tasks, onRemotesPublished);
+    series([
+        series.bind(null, tasks),
+        cluster.inspectUpstream.bind(cluster)
+    ], onResults);
 
-    function onRemotesPublished(err, data) {
+    function onResults(err, results) {
         if (err) {
             assert.ifError(err);
         }
 
-        cluster.inspectUpstream(onInspectUpstream);
-    }
+        var upstream = results[1];
 
-    function onInspectUpstream(err, upstream) {
-        if (err) {
-            assert.ifError(err);
+        Object.keys(cluster.remoteRepos).forEach(testPublish);
+
+        function testPublish(key) {
+            var filepath = 'thrift/github.com/org/' + key.toLowerCase() +
+                '/service.thrift';
+            assert.equal(
+                upstream.files[filepath],
+                thriftIdl(key.toUpperCase()),
+                'Correct published thrift file for service ' + key.toUpperCase()
+            );
         }
-
-        // console.log(JSON.stringify(upstream, null, '    '));
 
         assert.end();
     }

@@ -34,16 +34,26 @@ TestCluster.test('run the thrift-god', {
             assert.ifError(err);
         }
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'github.com/\n',
-            'Correct thrift file contents'
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift'
+            ],
+            'Upstream contains all expected files'
         );
+
         assert.equal(data.gitlog,
             'Updating D to latest version\n' +
             'Updating D to latest version ' +
@@ -147,23 +157,30 @@ TestCluster.test('run with branches', {
             assert.ifError(err);
         }
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'E.thrift\n' +
-            'github.com/\n'
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/E.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift',
+                'thrift/github.com/org/e/meta.json',
+                'thrift/github.com/org/e/service.thrift'
+            ],
+            'Upstream contains all expected files'
         );
 
-        assert.equal(
-            data.remotes.E,
-            'service E {\n' +
-            '    i32 echo(1:i32 value)\n' +
-            '}\n'
-        );
+        assert.equal(data.remotes.E, thriftIdl('E'));
 
         assert.end();
     }
@@ -197,15 +214,27 @@ TestCluster.test('run with custom localFileName', {
             assert.ifError(err);
         }
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'E.thrift\n' +
-            'github.com/\n'
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/E.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift',
+                'thrift/github.com/org/e/foo.thrift',
+                'thrift/github.com/org/e/meta.json'
+            ],
+            'Upstream contains all expected files'
         );
 
         assert.equal(data.remotes.E, thriftIdl('E'));
@@ -263,15 +292,27 @@ TestCluster.test('run without thrift file', {
             'fatal: Path \'thrift/no.thrift\' does not ' +
                 'exist in \'HEAD\'\n');
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'E.thrift\n' +
-            'github.com/\n'
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/E.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift',
+                'thrift/github.com/org/e/empty.thrift',
+                'thrift/github.com/org/e/meta.json'
+            ],
+            'Upstream contains all expected files'
         );
 
         assert.equal(data.remotes.E, '');
@@ -306,15 +347,26 @@ TestCluster.test('running thrift-god twice', {
             assert.ifError(err);
         }
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'github.com/\n'
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift'
+            ],
+            'Upstream contains all expected files'
         );
+
         assert.equal(data.gitlog,
             'Updating D to latest version\n' +
             'Updating D to latest version ' +
@@ -388,15 +440,6 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
             assert.ifError(err);
         }
 
-        assert.equal(data.thrift,
-            'tree HEAD:thrift\n' +
-            '\n' +
-            'A.thrift\n' +
-            'B.thrift\n' +
-            'C.thrift\n' +
-            'D.thrift\n' +
-            'github.com/\n'
-        );
         assert.equal(data.gitlog,
             'Updating B to latest version\n' +
             'Updating B to latest version ' +
@@ -421,6 +464,26 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
         assert.equal(new Date(data.meta.time).getTime(),
             data.meta.version);
 
+        assert.deepEqual(
+            Object.keys(data.files).sort(),
+            [
+                'meta.json',
+                'thrift/A.thrift',
+                'thrift/B.thrift',
+                'thrift/C.thrift',
+                'thrift/D.thrift',
+                'thrift/github.com/org/a/meta.json',
+                'thrift/github.com/org/a/service.thrift',
+                'thrift/github.com/org/b/meta.json',
+                'thrift/github.com/org/b/service.thrift',
+                'thrift/github.com/org/c/meta.json',
+                'thrift/github.com/org/c/service.thrift',
+                'thrift/github.com/org/d/meta.json',
+                'thrift/github.com/org/d/service.thrift'
+            ],
+            'Upstream contains all expected files'
+        );
+
         assert.equal(data.meta.remotes.A.sha,
             'd329c8c24d0871076a5f05180a439bccb9bebe71');
         assert.equal(data.meta.remotes.B.sha,
@@ -431,23 +494,10 @@ TestCluster.test('updating a remote', {}, function t(cluster, assert) {
             'cf9c2141b3dbb05bcbaa31579b883697d42c7f8d');
 
         assert.deepEqual(data.remotes, {
-            'A':
-                'service A {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n',
-            'B':
-                'service B {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '    i64 echo64(1:i64 value)\n' +
-                '}\n',
-            'C':
-                'service C {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n',
-            'D':
-                'service D {\n' +
-                '    i32 echo(1:i32 value)\n' +
-                '}\n'
+            'A': thriftIdl('A'),
+            'B': thriftIdlContent,
+            'C': thriftIdl('C'),
+            'D': thriftIdl('D')
         });
 
         var remotes = data.meta.remotes;

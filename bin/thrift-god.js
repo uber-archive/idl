@@ -81,7 +81,12 @@ function ThriftGod(opts) {
 }
 util.inherits(ThriftGod, EventEmitter);
 
-ThriftGod.prototype.bootstrap = function bootstrap(cb) {
+ThriftGod.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
+    if (typeof fetchRemotes === 'function') {
+        cb = fetchRemotes;
+        fetchRemotes = true;
+    }
+
     var self = this;
 
     // TODO reload json file when it changes
@@ -101,7 +106,7 @@ ThriftGod.prototype.bootstrap = function bootstrap(cb) {
             logger: self.logger
         });
 
-        self.thriftRepo.bootstrap(onBootstrap);
+        self.thriftRepo.bootstrap(fetchRemotes, onBootstrap);
     }
 
     function onBootstrap(err) {

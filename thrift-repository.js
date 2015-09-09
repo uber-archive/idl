@@ -91,7 +91,12 @@ function ThriftRepository(opts) {
 
 /* rm -rf repoFolder; */
 ThriftRepository.prototype.bootstrap =
-function bootstrap(callback) {
+function bootstrap(fetchRemotes, callback) {
+    if (typeof fetchRemotes === 'function') {
+        callback = fetchRemotes;
+        fetchRemotes = true;
+    }
+
     var self = this;
 
     rimraf(self.repositoryFolder, onRemoved);
@@ -115,7 +120,11 @@ function bootstrap(callback) {
             return callback(err);
         }
 
-        self.fetchRemotes(onRemotes);
+        if (fetchRemotes) {
+            self.fetchRemotes(onRemotes);
+        } else {
+            callback(null);
+        }
     }
 
     function onRemotes(err) {
@@ -125,7 +134,6 @@ function bootstrap(callback) {
             });
             return callback(err);
         }
-
         callback(null);
     }
 };
@@ -341,6 +349,8 @@ function _processThriftFiles(remote, callback) {
     var destination;
     var newShasums;
     var service;
+    var publishedMetaFile;
+    var destinationMetaFilepath;
 
     var remotePath = remote.repository.replace('file://', '');
     self.getServiceName(remotePath, onServiceName);
@@ -391,10 +401,60 @@ function _processThriftFiles(remote, callback) {
 
         self.meta.updateRecord(service, {
             shasums: newShasums
-        }, onUpdated);
+        }, onRegistryMetaUpdated);
     }
 
-    function onUpdated(err) {
+    function onRegistryMetaUpdated(err) {
+        if (err) {
+            return callback(err);
+        }
+        publishedMetaFile = ThriftMetaFile({
+            fileName: path.join(
+                remotePath,
+                self.thriftFolderName,
+                self.metaFilename
+            )
+        });
+
+        publishedMetaFile.readFile(onFileRead);
+
+        function onFileRead(readErr) {
+            if (readErr) {
+                return callback(readErr);
+            }
+            publishedMetaFile.publish({
+                shasums: newShasums
+            }, onPublishedMetaFileWritten);
+        }
+    }
+
+    function onPublishedMetaFileWritten(err) {
+        if (err) {
+            return callback(err);
+        }
+
+        fs.readFile(publishedMetaFile.fileName, 'utf8', onPublishedRead);
+
+        function onPublishedRead(err2, content) {
+            if (err2) {
+                return callback(err2);
+            }
+
+            destinationMetaFilepath = path.join(
+                destination,
+                self.metaFilename
+            );
+
+            fs.writeFile(
+                destinationMetaFilepath,
+                content,
+                'utf8',
+                onMetaPublished
+            );
+        }
+    }
+
+    function onMetaPublished(err) {
         if (err) {
             return callback(err);
         }
@@ -403,6 +463,7 @@ function _processThriftFiles(remote, callback) {
 
         var command = 'git add ' +
             self.meta.fileName + ' ' +
+            destinationMetaFilepath + ' ' +
             files;
         gitexec(command, {
             cwd: self.repositoryFolder,
