@@ -44,6 +44,7 @@
     "tape": "^3.4.0",
     "tape-cluster": "2.0.0",
     "time-mock": "0.1.2",
+    "uber-licence": "^1.5.1",
     "uber-standard": "3.6.4"
   },
   "licenses": [
@@ -53,6 +54,7 @@
     }
   ],
   "scripts": {
+    "add-licence": "uber-licence",
     "test": "npm run lint -s && npm run cover -s",
     "unit-test": "node test/index.js",
     "lint": "standard -v",
