@@ -36,7 +36,7 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
 
         self._remotes = meta.remotes;
         self._version = meta.version;
-        self._lastDate = new Date(meta.time);
+        self._lastDate = new Date(meta.time || Date.now());
         self._shasums = meta.shasums;
 
         cb(null);

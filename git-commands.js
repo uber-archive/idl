@@ -22,7 +22,7 @@ function addCommitTagAndPushToOrigin(opts, callback) {
     series([
         addFiles.bind(ctx, opts.files),
         commitWithMessage.bind(ctx, opts.service, opts.version),
-        timestampTag.bind(ctx, opts.timestamp),
+        timestampTag.bind(ctx, opts.service, opts.timestamp),
         pushToOriginWithTags.bind(ctx)
     ], callback);
 }
@@ -48,10 +48,10 @@ function commitWithMessage(service, version, callback) {
     }, callback);
 }
 
-function timestampTag(currTime, callback) {
+function timestampTag(service, currTime, callback) {
     var command = 'git tag ' +
         'v' + currTime.getTime() + ' ' +
-        '-am "' + currTime.toISOString() + '"';
+        '-am "' + currTime.toISOString() + ' ' + service + '"';
     gitexec(command, {
         cwd: this.cwd,
         logger: this.logger
