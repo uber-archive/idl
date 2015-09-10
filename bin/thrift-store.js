@@ -39,7 +39,7 @@ var template = require('string-template');
 
 var GitCommands = require('../git-commands');
 
-var gitexec = require('../git-process.js').exec;
+var gitexec = require('../git-process.js').spawn;
 // var gitspawn = require('../git-process.js').spawn;
 var ServiceName = require('../service-name');
 var ThriftMetaFile = require('../thrift-meta-file.js');
@@ -406,6 +406,32 @@ function publish(cb) {
             return cb(err);
         }
 
+        GitCommands.addFiles.call({
+            cwd: self.cwd,
+            logger: self.logger
+        }, [
+            path.join(self.cwd, self.thriftFolder, self.metaFilename)
+        ], onMetaAdded)
+    }
+
+    function onMetaAdded(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var message = 'Updating thrift meta.json file post-publishing';
+        var command = 'git commit -m "' + message + '"';
+        gitexec(command, {
+            cwd: self.cwd,
+            logger: self.logger
+        }, onMetaCommitted);
+    }
+
+    function onMetaCommitted(err) {
+        if (err) {
+            return cb(err);
+        }
+
         var files = [
             self.meta.fileName,
             destinationMetaFilepath
@@ -496,7 +522,7 @@ function cloneRepository(cb) {
         gitexec(command, {
             cwd: cwd,
             logger: self.logger,
-            ignoreStderr: true
+            ignoreStderr: false
         }, cb);
     }
 }
@@ -509,7 +535,7 @@ function pullRepository(cb) {
     gitexec(command, {
         cwd: cwd,
         logger: self.logger,
-        ignoreStderr: true
+        ignoreStderr: false
     }, onFetch);
 
     function onFetch(err) {

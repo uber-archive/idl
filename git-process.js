@@ -27,7 +27,7 @@ var console = require('console');
 var splitargs = require('splitargs');
 
 module.exports.exec = gitexec;
-// module.exports.spawn = gitspawn;
+module.exports.spawn = gitspawn;
 
 function gitexec(command, options, callback) {
     options = options || {};
@@ -52,25 +52,25 @@ function gitexec(command, options, callback) {
     }
 }
 
-// function gitspawn(command, options, callback) {
-//     options = options || {};
-//     assert(options && options.logger, 'logger required');
-//     var commandParts = splitargs(command);
+function gitspawn(command, options, callback) {
+    options = options || {};
+    assert(options && options.logger, 'logger required');
+    var commandParts = splitargs(command);
 
-//     var git = spawn(commandParts.shift(), commandParts, options);
+    var git = spawn(commandParts.shift(), commandParts, options);
 
-//     git.stdout.on('data', function logStdout(data) {
-//         console.log('stdout: ' + data);
-//     });
+    git.stdout.on('data', function logStdout(data) {
+        console.log('stdout: ' + data);
+    });
 
-//     git.stderr.on('data', function logStderr(data) {
-//         console.log('stderr: ' + data);
-//     });
+    git.stderr.on('data', function logStderr(data) {
+        console.log('stderr: ' + data);
+    });
 
-//     git.once('close', function logExitCode(code) {
-//         console.log('git exited with code ' + code);
-//         callback();
-//     });
+    git.once('close', function logExitCode(code) {
+        console.log('git exited with code ' + code);
+        callback();
+    });
 
-//     return git;
-// }
+    return git;
+}
