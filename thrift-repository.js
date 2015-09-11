@@ -25,7 +25,7 @@ var path = require('path');
 var fs = require('fs');
 var template = require('string-template');
 var mkdirp = require('mkdirp');
-var ncp = require('ncp');
+var cpr = require('cpr');
 var deepEqual = require('deep-equal');
 
 var RemoteCache = require('./remote-cache.js');
@@ -250,7 +250,11 @@ function _processThriftFiles(remote, callback) {
             return callback(err);
         }
 
-        ncp(source, destination, onCopied);
+        cpr(source, destination, {
+            deleteFirst: true,
+            overwrite: true,
+            confirm: true
+        }, onCopied);
     }
 
     function onCopied(err) {

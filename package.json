@@ -19,11 +19,11 @@
     "email": "aandrade@uber.com"
   },
   "dependencies": {
+    "cpr": "^0.4.1",
     "debug-logtron": "4.1.0",
     "deep-equal": "^1.0.0",
     "minimist": "1.1.1",
     "mkdirp": "0.5.1",
-    "ncp": "^2.0.0",
     "process": "0.11.1",
     "read-json": "0.1.0",
     "rimraf": "^2.3.4",
