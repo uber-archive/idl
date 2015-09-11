@@ -134,12 +134,29 @@ ThriftMetaFile.prototype.toJSON = function toJSON() {
     var self = this;
     var date = self._lastDate;
 
-    return {
-        time: date.toISOString(),
-        version: date.getTime(),
-        remotes: self._remotes,
-        shasums: self._shasums
-    };
+    var json = {};
+
+    // date will only exist for the registry meta.json file and should
+    // be the date of the most recently updated file.
+    // Services should have a different field to indicate what version
+    // of the monorepo to install from. TODO: what name?
+    if (date) {
+        json.time = date.toISOString();
+        // "version" is a poor choice for a name here. It really should
+        // be something like mtime. i.e. last time a new thrift definition
+        // was published.
+        json.version = date.getTime();
+    }
+
+    if (self._shasums) {
+        json.shasums = self._shasums;
+    }
+
+    if (self._remotes) {
+        json.remotes = self._remotes;
+    }
+
+    return json;
 };
 
 ThriftMetaFile.prototype.toJSONString = function toJSONString() {

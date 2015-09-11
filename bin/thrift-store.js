@@ -369,9 +369,7 @@ function publish(cb) {
             if (readErr) {
                 return cb(readErr);
             }
-            publishedMetaFile.publish({
-                shasums: newShasums
-            }, onPublishedMetaFileWritten);
+            publishedMetaFile.save(onPublishedMetaFileWritten);
         }
     }
 
@@ -406,32 +404,6 @@ function publish(cb) {
             return cb(err);
         }
 
-        GitCommands.addFiles.call({
-            cwd: self.cwd,
-            logger: self.logger
-        }, [
-            path.join(self.cwd, self.thriftFolder, self.metaFilename)
-        ], onMetaAdded)
-    }
-
-    function onMetaAdded(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        var message = 'Updating thrift meta.json file post-publishing';
-        var command = 'git commit -m "' + message + '"';
-        gitexec(command, {
-            cwd: self.cwd,
-            logger: self.logger
-        }, onMetaCommitted);
-    }
-
-    function onMetaCommitted(err) {
-        if (err) {
-            return cb(err);
-        }
-
         var files = [
             self.meta.fileName,
             destinationMetaFilepath
@@ -440,7 +412,7 @@ function publish(cb) {
         GitCommands.addCommitTagAndPushToOrigin({
             files: files,
             service: service,
-            timestamp: publishedMetaFile.time(),
+            timestamp: self.meta.time(),
             cwd: self.repoCacheLocation,
             logger: self.logger
         }, cb);
