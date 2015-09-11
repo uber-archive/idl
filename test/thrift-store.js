@@ -116,7 +116,7 @@ TestCluster.test('run `thrift-store install`', {
     }
 });
 
-TestCluster.test('run `thrift-store publish`', {
+TestCluster.test.only('run `thrift-store publish`', {
     fetchRemotes: false
 }, function t(cluster, assert) {
 
@@ -152,7 +152,7 @@ TestCluster.test('run `thrift-store publish`', {
                 'Correct published thrift file for service ' + key.toUpperCase()
             );
         }
-
+        throw 'foo'
         assert.end();
     }
 });

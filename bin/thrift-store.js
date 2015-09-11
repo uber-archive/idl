@@ -34,7 +34,7 @@ var textTable = require('text-table');
 var readJSON = require('read-json');
 var parallel = require('run-parallel');
 var rimraf = require('rimraf');
-var ncp = require('ncp');
+var cpr = require('cpr');
 var template = require('string-template');
 
 var GitCommands = require('../git-commands');
@@ -225,7 +225,11 @@ function install(service, cb) {
             return cb(err);
         }
 
-        ncp(source, destination, onCopied);
+        cpr(source, destination, {
+            deleteFirst: true,
+            overwrite: true,
+            confirm: true
+        }, onCopied);
     }
 
     function onCopied(err) {
@@ -316,23 +320,7 @@ function publish(cb) {
             service
         );
         source = path.join(self.cwd, self.thriftFolder, service);
-
-        rimraf(destination, onRimRaf);
-    }
-
-    function onRimRaf(err) {
-        if (err) {
-            return cb(err);
-        }
-        mkdirp(path.dirname(destination), onDir);
-    }
-
-    function onDir(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        ncp(source, destination, onCopied);
+        cpr(source, destination, onCopied);
     }
 
     function onCopied(err) {
