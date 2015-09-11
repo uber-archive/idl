@@ -24,7 +24,7 @@ var TestCluster = require('./lib/test-cluster.js');
 var defineFixture = require('./lib/define-fixture');
 var thriftIdl = require('./lib/thrift-idl');
 
-TestCluster.test('run the thrift-god', {
+TestCluster.test('run the thrift-store-daemon', {
 }, function t(cluster, assert) {
     cluster.inspectUpstream(onUpstream);
 
@@ -229,7 +229,7 @@ TestCluster.test('run with custom localFileName', {
     }
 });
 
-TestCluster.test('running thrift-god twice', {
+TestCluster.test('running thrift-store-daemon twice', {
     prepareOnly: true
 }, function t(cluster, assert) {
     cluster.setupThriftGod(onSetup);

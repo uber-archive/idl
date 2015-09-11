@@ -1,4 +1,4 @@
-# thrift-god
+# thrift-store
 
 <!--
     [![build status][build-png]][build]
@@ -8,12 +8,12 @@
 
 <!-- [![NPM][npm-png]][npm] -->
 
-A god repository for all your thrifts
+A CLI for managing thrift IDL files
 
 ## Introduction
 
-`thrift-god` provides a "package manager" for thrift interfaces.
-It comes with two CLI commands, `thrift-god` and `thrift-get`.
+`thrift-store` provides a "package manager" for thrift interfaces.
+It comes with two CLI commands, `thrift-store-daemon` and `thrift-store`.
 
 ## Motivation
 
@@ -39,11 +39,11 @@ and their IDL files.
 
 If I want to download one of these files I can
 `thrift-get fetch {service}` and it will fetch the IDL file into
-`./thrift/{service}.thrift`. 
+`./thrift/{service}.thrift`.
 
 Once you fetch your first service we also write the
 `./thrift/meta.json` meta file that contains the version of
-the file as well as the time it was last changed. 
+the file as well as the time it was last changed.
 
 All thrift files are under one version; If you want to update
 to the latest version just run `thrift-get update` and it will
@@ -60,12 +60,12 @@ If your developing the backend for a new service you just have
 to commit the thrift definition into git; by convention we place
 it in `./thrift/service.thrift`.
 
-The `thrift-god` daemon will fetch it and put it in the repository.
+The `thrift-store-daemon` will fetch it and put it in the repository.
 
-### As an adminstrator: `thrift-god`
+### As an adminstrator: `thrift-store-daemon`
 
 To set up the thrift interface repository you can run the
-`thrift-god` deamon. You just run `thrift-god --config-file={path}`
+`thrift-store-daemon`. You just run `thrift-store-daemon --config-file={path}`
 and it will populate the thrift remote repository.
 
 The config file contains the following fields
@@ -73,8 +73,8 @@ The config file contains the following fields
 ```json
 {
     "upstream": "git+ssh://git@github.com/my-company/thrift-files",
-    "repositoryFolder": "/var/lib/my-company/thrift-god/repo",
-    "cacheLocation": "/var/lib/my-company/thrift-god/cache",
+    "repositoryFolder": "/var/lib/my-company/thrift-store/repo",
+    "cacheLocation": "/var/lib/my-company/thrift-store/cache",
     "remotes": [{
         "repository": "git+ssh://git@github.com/my-company/user-service",
         "branch": "master",
@@ -87,24 +87,23 @@ The config file contains the following fields
 }
 ```
 
-The `thrift-god` daemon will fetch all the remotes and place their thrift
-files in the `upstream` repository. You can use `thrift-get` to fetch from
-the upstream repository.
+The `thrift-store-daemon` will fetch all the remotes and place their thrift
+files in the `upstream` repository. You can use `thrift-store install` to
+fetch from the upstream repository.
 
 ## TODO:
 
 This project is not done yet:
 
- - [x] Implement `thrift-god` config loader
+ - [x] Implement `thrift-store` config loader (i.e. load .rc file from ~/)
  - [x] Implement fetching from `remotes` into `upstream`
- - [x] Make `thrift-god` a repeating cron job
- - [x] Support `localFileName` in config.
+ - [x] Make `thrift-store` a repeating cron job
+ - [x] Support `main` file in config to indicate service entry point.
  - [x] Support `branch` in config.
- - [x] Implement `thrift-get` binary.
 
 ## Installation
 
-`npm install thrift-god --global`
+`npm install thrift-store --global`
 
 ## Tests
 
@@ -112,15 +111,16 @@ This project is not done yet:
 
 ## Contributors
 
- - Raynos
+ - Raynos (Jake Verbaten)
+ - malandrew (Andrew de Andrade)
 
 ## MIT Licensed
 
-  [build-png]: https://secure.travis-ci.org/Raynos/thrift-god.png
-  [build]: https://travis-ci.org/Raynos/thrift-god
-  [cover-png]: https://coveralls.io/repos/Raynos/thrift-god/badge.png
-  [cover]: https://coveralls.io/r/Raynos/thrift-god
-  [dep-png]: https://david-dm.org/Raynos/thrift-god.png
-  [dep]: https://david-dm.org/Raynos/thrift-god
-  [npm-png]: https://nodei.co/npm/thrift-god.png?stars&downloads
-  [npm]: https://nodei.co/npm/thrift-god
+  [build-png]: https://secure.travis-ci.org/uber/thrift-store.png
+  [build]: https://travis-ci.org/uber/thrift-store
+  [cover-png]: https://coveralls.io/repos/uber/thrift-store/badge.png
+  [cover]: https://coveralls.io/r/uber/thrift-store
+  [dep-png]: https://david-dm.org/uber/thrift-store.png
+  [dep]: https://david-dm.org/uber/thrift-store
+  [npm-png]: https://nodei.co/npm/thrift-store.png?stars&downloads
+  [npm]: https://nodei.co/npm/thrift-store

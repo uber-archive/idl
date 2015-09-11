@@ -35,7 +35,7 @@ var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
-var ThriftGod = require('../../bin/thrift-god.js');
+var ThriftGod = require('../../bin/thrift-store-daemon.js');
 var ThriftStore = require('../../bin/thrift-store.js');
 var defineFixture = require('./define-fixture');
 

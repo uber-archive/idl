@@ -20,5 +20,5 @@
 
 'use strict';
 
-require('./thrift-god.js');
+require('./thrift-store-daemon.js');
 require('./thrift-store.js');
