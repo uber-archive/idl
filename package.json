@@ -1,25 +1,23 @@
 {
-  "name": "thrift-god",
+  "name": "thrift-store",
   "version": "2.1.2",
-  "description": "A god repository for all your thrifts",
+  "description": "A CLI for managing thrift IDL files",
   "keywords": [],
-  "author": "Raynos <raynos2@gmail.com>",
-  "repository": "git://github.com/Raynos/thrift-god.git",
+  "contributors": [
+    "Andrew de Andrade <aandrade@uber.com>",
+    "Jake Verbaten <jakev@uber.com>"
+  ],
+  "repository": "git://github.com/uber/thrift-store.git",
   "main": "index",
-  "homepage": "https://github.com/Raynos/thrift-god",
+  "homepage": "https://github.com/uber/thrift-store",
   "bin": {
     "thrift-store": "bin/thrift-store.js",
-    "thrift-god": "bin/thrift-god.js"
+    "thrift-store-daemon": "bin/thrift-store-daemon.js"
   },
   "bugs": {
-    "url": "https://github.com/Raynos/thrift-god/issues",
-    "email": "raynos2@gmail.com"
+    "url": "https://github.com/uber/thrift-store-daemon/issues",
+    "email": "aandrade@uber.com"
   },
-  "contributors": [
-    {
-      "name": "Raynos"
-    }
-  ],
   "dependencies": {
     "debug-logtron": "4.1.0",
     "deep-equal": "^1.0.0",
@@ -50,7 +48,7 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/Raynos/thrift-god/raw/master/LICENSE"
+      "url": "http://github.com/uber/thrift-store/raw/master/LICENSE"
     }
   ],
   "scripts": {
