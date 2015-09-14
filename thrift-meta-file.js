@@ -22,7 +22,7 @@
 
 var readJSON = require('read-json');
 var fs = require('fs');
-var setImmediate = require('timers').setImmediate;
+var dezalgo = require('dezalgo');
 
 module.exports = ThriftMetaFile;
 
@@ -121,13 +121,7 @@ ThriftMetaFile.prototype.publish = function publish(opts, callback) {
 // a lock should be set that delays this if updateRecord is in progress
 ThriftMetaFile.prototype.getDependencies =
 function getDependencies(callback) {
-    var self = this;
-
-    setImmediate(onNextTick);
-
-    function onNextTick() {
-        callback(null, self._remotes);
-    }
+    dezalgo(callback)(null, self._remotes);
 };
 
 ThriftMetaFile.prototype.toJSON = function toJSON() {
