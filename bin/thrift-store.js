@@ -211,26 +211,11 @@ function install(service, cb) {
         fileName: path.join(destination, self.metaFilename)
     });
 
-    rimraf(path.dirname(destination), onRimRaf);
-
-    function onRimRaf(err) {
-        if (err) {
-            return cb(err);
-        }
-        mkdirp(path.dirname(destination), onDir);
-    }
-
-    function onDir(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        cpr(source, destination, {
-            deleteFirst: true,
-            overwrite: true,
-            confirm: true
-        }, onCopied);
-    }
+    cpr(source, destination, {
+        deleteFirst: true,
+        overwrite: true,
+        confirm: true
+    }, onCopied);
 
     function onCopied(err) {
         if (err) {
