@@ -68,7 +68,9 @@ function gitspawn(command, options, callback) {
     });
 
     git.once('close', function logExitCode(code) {
-        console.log('git exited with code ' + code);
+        if (code !== 0) {
+            console.log('git exited with code ' + code);
+        }
         callback();
     });
 

@@ -22,7 +22,6 @@
     "cpr": "^0.4.1",
     "debug-logtron": "4.1.0",
     "deep-equal": "^1.0.0",
-    "dezalgo": "^1.0.3",
     "minimist": "1.1.1",
     "mkdirp": "0.5.1",
     "process": "0.11.1",
