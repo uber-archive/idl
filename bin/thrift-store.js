@@ -39,12 +39,13 @@ var template = require('string-template');
 
 var GitCommands = require('../git-commands');
 
-var gitexec = require('../git-process.js').spawn;
+var gitexec = require('../git-process.js').exec;
 // var gitspawn = require('../git-process.js').spawn;
 var ServiceName = require('../service-name');
 var ThriftMetaFile = require('../thrift-meta-file.js');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
+var getDependencies = require('../get-dependencies');
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
@@ -207,10 +208,6 @@ function install(service, cb) {
         fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
     });
 
-    var installedMetaFile = ThriftMetaFile({
-        fileName: path.join(destination, self.metaFilename)
-    });
-
     cpr(source, destination, {
         deleteFirst: true,
         overwrite: true,
@@ -222,62 +219,60 @@ function install(service, cb) {
             return cb(err);
         }
 
-        installedMetaFile.readFile(onInstalledMetaFileRead);
+        clientMetaFile.readFile(onReadFile);
 
-        function onInstalledMetaFileRead(readErr) {
-            if (readErr) {
-                return cb(readErr);
+        function onReadFile(err) {
+            if (err) {
+                return cb (err);
             }
 
-            installedMetaFile.getDependencies(onDependencies);
+            clientMetaFile.updateRecord(
+                service,
+                self.meta.getRecord(service),
+                onUpdatedClientMeta
+            );
         }
+
+
     }
 
-    function onDependencies(err, dependencies) {
+    function onUpdatedClientMeta(err) {
         if (err) {
             return cb(err);
         }
 
-        var dependenciesInstallers = Object.keys(dependencies)
-            .map(makeInstaller);
-
-        function makeInstaller(dependency) {
-            return function installDependencyThunk(callback) {
-                install(dependency, callback);
-            };
-        }
-
-        parallel(dependenciesInstallers, onInstalled);
+        clientMetaFile.save(cb);
     }
 
-    function onInstalled(err) {
-        if (err) {
-            return cb(err);
-        }
+    // function onClientMetaSaved(err) {
+    //     if (err) {
+    //         return cb(err);
+    //     }
+    //     console.log('===>', path.resolve(self.cwd, service));
+    //     getDependencies(path.resolve(self.cwd, service), onDependencies)
 
-        clientMetaFile.readFile(onClientMetaFileRead);
+    // }
 
-        function onClientMetaFileRead(readErr) {
-            if (readErr) {
-                return cb(readErr);
-            }
+    // function onDependencies(err, dependencies) {
+    //     if (err) {
+    //         return cb(err);
+    //     }
 
-            var installedMeta = installedMetaFile.toJSON();
+    //     console.log(service, dependencies);
 
-            clientMetaFile.updateRecord(service, {
-                shasums: installedMeta.shasums,
-                time: installedMeta.time
-            }, onMetaUpdated);
-        }
-    }
+    //     return cb();
 
-    function onMetaUpdated(err) {
-        if (err) {
-            return cb(err);
-        }
+    //     var dependenciesInstallers = Object.keys(dependencies)
+    //         .map(makeInstaller);
 
-        cb(null);
-    }
+    //     function makeInstaller(dependency) {
+    //         return function installDependencyThunk(callback) {
+    //             install(dependency, callback);
+    //         };
+    //     }
+
+    //     series(dependenciesInstallers, cb);
+    // }
 
 }
 
@@ -287,8 +282,6 @@ function publish(cb) {
     var source;
     var service;
     var newShasums;
-    var publishedMetaFile;
-    var destinationMetaFilepath;
 
     self.getServiceName(self.cwd, onServiceName);
 
@@ -324,6 +317,7 @@ function publish(cb) {
         newShasums = shasums;
 
         self.meta.updateRecord(service, {
+            time: Date.now(),
             shasums: shasums
         }, onRegistryMetaUpdated);
     }
@@ -332,54 +326,9 @@ function publish(cb) {
         if (err) {
             return cb(err);
         }
-        publishedMetaFile = ThriftMetaFile({
-            fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
-        });
-
-        publishedMetaFile.readFile(onFileRead);
-
-        function onFileRead(readErr) {
-            if (readErr) {
-                return cb(readErr);
-            }
-            publishedMetaFile.save(onPublishedMetaFileWritten);
-        }
-    }
-
-    function onPublishedMetaFileWritten(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        fs.readFile(publishedMetaFile.fileName, 'utf8', onPublishedRead);
-
-        function onPublishedRead(err2, content) {
-            if (err2) {
-                return cb(err2);
-            }
-
-            destinationMetaFilepath = path.join(
-                destination,
-                self.metaFilename
-            );
-
-            fs.writeFile(
-                destinationMetaFilepath,
-                content,
-                'utf8',
-                onMetaPublished
-            );
-        }
-    }
-
-    function onMetaPublished(err) {
-        if (err) {
-            return cb(err);
-        }
 
         var files = [
             self.meta.fileName,
-            destinationMetaFilepath
         ].concat(Object.keys(newShasums).map(getFilepath));
 
         GitCommands.addCommitTagAndPushToOrigin({
@@ -480,7 +429,7 @@ function pullRepository(cb) {
     gitexec(command, {
         cwd: cwd,
         logger: self.logger,
-        ignoreStderr: false
+        ignoreStderr: true
     }, onFetch);
 
     function onFetch(err) {

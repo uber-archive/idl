@@ -97,20 +97,7 @@ TestCluster.test('run `thrift-store install`', {
 
         var installedThriftFile =
             localApp.thrift['github.com'].org.b['service.thrift'];
-        var installedMetaFile =
-            JSON.parse(localApp.thrift['github.com'].org.b['meta.json']);
         // var localAppMetaFile = JSON.parse(localApp.thrift['meta.json']);
-
-        assert.equal(
-            installedThriftFile,
-            upstream.files['thrift/github.com/org/b/service.thrift'],
-            'Correct thrift file installed'
-        );
-        assert.deepEqual(
-            installedMetaFile.shasums,
-            upstream.meta.remotes['github.com/org/b'].shasums,
-            'Correct files and shasums for installed module'
-        );
 
         assert.end();
     }
@@ -220,23 +207,23 @@ TestCluster.test('run `thrift-store update`', {
         var local = data.local;
         var upstream = data.upstream;
 
-        var meta = JSON.parse(local.thrift['meta.json']);
+        var localMeta = JSON.parse(local.thrift['meta.json']);
 
         assert.equal(
-            meta.time,
+            localMeta.time,
             upstream.meta.remotes['github.com/org/b'].time
         );
         assert.equal(
-            meta.version,
+            localMeta.version,
             new Date(upstream.meta.remotes['github.com/org/b'].time).getTime()
         );
 
         assert.deepEqual(
-            meta.remotes['github.com/org/b'],
+            localMeta.remotes['github.com/org/b'],
             upstream.meta.remotes['github.com/org/b']
         );
         assert.deepEqual(
-            meta.remotes['github.com/org/d'],
+            localMeta.remotes['github.com/org/d'],
             upstream.meta.remotes['github.com/org/d']
         );
 

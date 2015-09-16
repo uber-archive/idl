@@ -110,6 +110,11 @@ function updateRecord(folderName, opts, callback) {
     self.save(callback);
 };
 
+ThriftMetaFile.prototype.getRecord = function (service) {
+    var self = this;
+    return self._remotes[service];
+}
+
 ThriftMetaFile.prototype.publish = function publish(opts, callback) {
     opts = opts || {};
     var self = this;
