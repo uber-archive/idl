@@ -164,10 +164,6 @@ function processArgs(cb) {
             case 'install':
                 var service = self.remainder[1];
 
-                if (!service) {
-                    return cb(new Error('must specify service to install'));
-                }
-
                 self.install(service, cb);
                 break;
 
@@ -193,26 +189,103 @@ function list(cb) {
     return cb(null, ListText(self.meta));
 }
 
-function install(service, cb) {
+function installFromMeta(cb) {
     var self = this;
-    // TODO: if !service, read from meta.json
 
-    var destination = path.join(self.cwd, self.thriftFolder, service);
-    var source = path.join(
-        self.repoCacheLocation,
-        self.thriftFolder,
-        service
-    );
-
-    var clientMetaFile = ThriftMetaFile({
-        fileName: path.join(self.cwd, self.thriftFolder, self.metaFilename)
+    var localMeta = ThriftMetaFile({
+        fileName: path.join(
+            self.cwd,
+            self.thriftFolder,
+            self.metaFilename
+        )
     });
 
-    cpr(source, destination, {
-        deleteFirst: true,
-        overwrite: true,
-        confirm: true
-    }, onCopied);
+    localMeta.readFile(onReadLocalMeta);
+
+    function onReadLocalMeta(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var version = localMeta.toJSON().version;
+        checkoutRef.call(self, 'v' + version, onCheckoutRegistryTag);
+    }
+
+    function onCheckoutRegistryTag(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var services = Object.keys(localMeta.toJSON().remotes)
+            .map(makeInstallServiceThunk);
+
+        parallel(services, cb);
+    }
+
+    function makeInstallServiceThunk(service) {
+        return install.bind(self, service);
+    }
+}
+
+function install(service, cb) {
+    var self = this;
+
+    if (!service) {
+        return installFromMeta.call(self, cb);
+    }
+
+    var clientMetaFile = ThriftMetaFile({
+        fileName: path.join(
+            self.cwd,
+            self.thriftFolder,
+            self.metaFilename
+        )
+    });
+
+    clientMetaFile.readFile(onReadLocalMeta);
+
+    function onReadLocalMeta(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var alreadyInstalled = !!clientMetaFile.toJSON().remotes[service];
+        var existsInRegistry = !!self.meta.toJSON().remotes[service];
+
+        if (!existsInRegistry) {
+            cb(new Error('That service is not in the registry'))
+        }
+
+        if (alreadyInstalled) {
+            onUpdate();
+        } else {
+            self.update(onUpdate);
+        }
+    }
+
+    function onUpdate(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var destination = path.join(
+            self.cwd,
+            self.thriftFolder,
+            service
+        );
+
+        var source = path.join(
+            self.repoCacheLocation,
+            self.thriftFolder,
+            service
+        );
+
+        cpr(source, destination, {
+            deleteFirst: true,
+            overwrite: true,
+            confirm: true
+        }, onCopied);
+    }
 
     function onCopied(err) {
         if (err) {
@@ -232,8 +305,6 @@ function install(service, cb) {
                 onUpdatedClientMeta
             );
         }
-
-
     }
 
     function onUpdatedClientMeta(err) {
@@ -390,6 +461,14 @@ function fetchRepository(cb) {
             return cb(err);
         }
 
+        checkoutRef('master', onFetched);
+    }
+
+    function onFetched(err) {
+        if (err) {
+            return cb(err);
+        }
+
         self.meta = ThriftMetaFile({
             fileName: path.join(self.repoCacheLocation, self.metaFilename)
         });
@@ -443,6 +522,18 @@ function pullRepository(cb) {
             logger: self.logger
         }, cb);
     }
+}
+
+function checkoutRef(ref, cb) {
+    var self = this;
+
+    var cwd = self.repoCacheLocation;
+    var command = 'git checkout ' + ref;
+    gitexec(command, {
+        cwd: cwd,
+        logger: self.logger,
+        ignoreStderr: true
+    }, cb);
 }
 
 function ListText(meta) {
