@@ -37,13 +37,9 @@ TestCluster.test('run the thrift-store-daemon', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
                 'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
                 'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
                 'thrift/github.com/org/d/service.thrift'
             ],
             'Upstream contains all expected files'
@@ -153,15 +149,10 @@ TestCluster.test('run with branches', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
                 'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
                 'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
                 'thrift/github.com/org/d/service.thrift',
-                'thrift/github.com/org/e/meta.json',
                 'thrift/github.com/org/e/service.thrift'
             ],
             'Upstream contains all expected files'
@@ -206,16 +197,11 @@ TestCluster.test('run with custom localFileName', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
                 'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
                 'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
                 'thrift/github.com/org/d/service.thrift',
-                'thrift/github.com/org/e/foo.thrift',
-                'thrift/github.com/org/e/meta.json'
+                'thrift/github.com/org/e/foo.thrift'
             ],
             'Upstream contains all expected files'
         );
@@ -259,13 +245,9 @@ TestCluster.test('running thrift-store-daemon twice', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
                 'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
                 'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
                 'thrift/github.com/org/d/service.thrift'
             ],
             'Upstream contains all expected files'
@@ -374,13 +356,9 @@ TestCluster.test('updating a remote', {
             Object.keys(data.files).sort(),
             [
                 'meta.json',
-                'thrift/github.com/org/a/meta.json',
                 'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/meta.json',
                 'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/meta.json',
                 'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/meta.json',
                 'thrift/github.com/org/d/service.thrift'
             ],
             'Upstream contains all expected files'

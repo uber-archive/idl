@@ -207,8 +207,6 @@ function _processThriftFiles(remote, callback) {
     var destination;
     var newShasums;
     var service;
-    var publishedMetaFile;
-    var destinationMetaFilepath;
     var time = new Date();
 
     var remotePath = remote.repository.replace('file://', '');
@@ -265,58 +263,7 @@ function _processThriftFiles(remote, callback) {
         self.meta.updateRecord(service, {
             shasums: newShasums,
             time: time
-        }, onRegistryMetaUpdated);
-    }
-
-    function onRegistryMetaUpdated(err) {
-        if (err) {
-            return callback(err);
-        }
-        publishedMetaFile = ThriftMetaFile({
-            fileName: path.join(
-                remotePath,
-                self.thriftFolderName,
-                self.metaFilename
-            )
-        });
-
-        publishedMetaFile.readFile(onFileRead);
-
-        function onFileRead(readErr) {
-            if (readErr) {
-                return callback(readErr);
-            }
-            publishedMetaFile.publish({
-                shasums: newShasums,
-                time: time
-            }, onPublishedMetaFileWritten);
-        }
-    }
-
-    function onPublishedMetaFileWritten(err) {
-        if (err) {
-            return callback(err);
-        }
-
-        fs.readFile(publishedMetaFile.fileName, 'utf8', onPublishedRead);
-
-        function onPublishedRead(err2, content) {
-            if (err2) {
-                return callback(err2);
-            }
-
-            destinationMetaFilepath = path.join(
-                destination,
-                self.metaFilename
-            );
-
-            fs.writeFile(
-                destinationMetaFilepath,
-                content,
-                'utf8',
-                onMetaPublished
-            );
-        }
+        }, onMetaPublished);
     }
 
     function onMetaPublished(err) {
@@ -325,8 +272,7 @@ function _processThriftFiles(remote, callback) {
         }
 
         var files = [
-            self.meta.fileName,
-            destinationMetaFilepath
+            self.meta.fileName
         ].concat(Object.keys(newShasums).map(getFilepath));
 
         GitCommands.addCommitTagAndPushToOrigin({

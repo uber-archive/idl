@@ -44,7 +44,9 @@ function addCommitTagAndPushToOrigin(opts, callback) {
         commitWithMessage.bind(ctx, opts.service, opts.version),
         timestampTag.bind(ctx, opts.service, opts.timestamp),
         pushToOriginWithTags.bind(ctx)
-    ], callback);
+    ], function() {
+        callback();
+    });
 }
 
 function addFiles(files, callback) {
