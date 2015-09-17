@@ -35,8 +35,8 @@ var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
-var ThriftGod = require('../../bin/thrift-store-daemon.js');
-var ThriftStore = require('../../bin/thrift-store.js');
+var IDLDaemon = require('../../bin/thrift-store-daemon.js');
+var IDL = require('../../bin/thrift-store.js');
 var defineFixture = require('./define-fixture');
 
 var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});
@@ -100,9 +100,9 @@ function TestCluster(opts) {
             })
     }, opts.config || {});
 
-    self.logger = DebugLogtron('thriftstore');
+    self.logger = DebugLogtron('idl');
     self.timers = TimeMock(0);
-    self.thriftGod = null;
+    self.idlDaemon = null;
 }
 
 TestCluster.prototype.bootstrap = function bootstrap(cb) {
@@ -115,7 +115,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         self.gitifyRemotes.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
-        self.prepareOnly ? null : self.setupThriftGod.bind(self)
+        self.prepareOnly ? null : self.setupIDLDaemon.bind(self)
     ].filter(Boolean), cb);
 };
 
@@ -159,7 +159,7 @@ function updateRemote(name, files, callback) {
     var remoteDir = path.join(self.remotesDir, name);
 
     series([
-        rimraf.bind(null, path.join(remoteDir, 'thrift')),
+        rimraf.bind(null, path.join(remoteDir, 'idl')),
         createFixtures.bind(null, remoteDir, files),
         git('add --all .', {
             cwd: remoteDir
@@ -187,28 +187,27 @@ TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
     ], cb);
 };
 
-TestCluster.prototype.writeConfigFile =
-function writeConfigFile(cb) {
+TestCluster.prototype.writeConfigFile = function writeConfigFile(cb) {
     var self = this;
 
     var data = JSON.stringify(self.config, null, '    ') + '\n';
     fs.writeFile(self.configFile, data, 'utf8', cb);
 };
 
-TestCluster.prototype.setupThriftGod =
-function setupThriftGod(cb) {
+TestCluster.prototype.setupIDLDaemon =
+function setupIDLDaemon(cb) {
     var self = this;
 
-    if (self.thriftGod) {
-        self.thriftGod.destroy();
+    if (self.idlDaemon) {
+        self.idlDaemon.destroy();
     }
 
-    self.thriftGod = ThriftGod({
+    self.idlDaemon = IDLDaemon({
         configFile: self.configFile,
         logger: self.logger,
         timers: self.timers
     });
-    self.thriftGod.bootstrap(self.fetchRemotes, cb);
+    self.idlDaemon.bootstrap(self.fetchRemotes, cb);
 };
 
 TestCluster.prototype.gitlog = function gitlog(cb) {
@@ -310,20 +309,19 @@ function inspectLocalApp(callback) {
     readDirFiles(self.localApp, 'utf8', callback);
 };
 
-TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
+TestCluster.prototype.idlGet = function idlGet(text, cb) {
     var self = this;
 
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
 
-    return ThriftStore.exec(text, {
+    return IDL.exec(text, {
         logger: self.logger
     }, cb);
 };
 
-TestCluster.prototype.thriftStoreInstall =
-function thriftStoreInstall(moduleName, cb) {
+TestCluster.prototype.idlInstall = function idlInstall(moduleName, cb) {
     var self = this;
     var text = 'install ' + moduleName;
 
@@ -331,13 +329,12 @@ function thriftStoreInstall(moduleName, cb) {
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
 
-    return ThriftStore.exec(text, {
+    return IDL.exec(text, {
         logger: self.logger
     }, cb);
 };
 
-TestCluster.prototype.thriftStorePublish =
-function thriftStorePublish(cwd, cb) {
+TestCluster.prototype.idlPublish = function idlPublish(cwd, cb) {
     var self = this;
     var text = 'publish';
 
@@ -345,7 +342,7 @@ function thriftStorePublish(cwd, cb) {
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + cwd;
 
-    return ThriftStore.exec(text, {
+    return IDL.exec(text, {
         logger: self.logger
     }, cb);
 };
@@ -353,7 +350,7 @@ function thriftStorePublish(cwd, cb) {
 TestCluster.prototype.close = function close(cb) {
     var self = this;
 
-    self.thriftGod.destroy();
+    self.idlDaemon.destroy();
     rimraf(self.fixturesDir, cb);
 };
 

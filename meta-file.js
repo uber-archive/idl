@@ -24,11 +24,11 @@ var readJSON = require('read-json');
 var fs = require('fs');
 var setImmediate = require('timers').setImmediate;
 
-module.exports = ThriftMetaFile;
+module.exports = MetaFile;
 
-function ThriftMetaFile(opts) {
-    if (!(this instanceof ThriftMetaFile)) {
-        return new ThriftMetaFile(opts);
+function MetaFile(opts) {
+    if (!(this instanceof MetaFile)) {
+        return new MetaFile(opts);
     }
 
     var self = this;
@@ -41,7 +41,7 @@ function ThriftMetaFile(opts) {
     self._shasums = null;
 }
 
-ThriftMetaFile.prototype.readFile = function readFile(cb) {
+MetaFile.prototype.readFile = function readFile(cb) {
     var self = this;
 
     readJSON(self.fileName, onFile);
@@ -63,7 +63,7 @@ ThriftMetaFile.prototype.readFile = function readFile(cb) {
     }
 };
 
-ThriftMetaFile.prototype.getSha = function getSha(folderName) {
+MetaFile.prototype.getSha = function getSha(folderName) {
     var self = this;
     var remote = self._remotes[folderName];
 
@@ -74,7 +74,7 @@ ThriftMetaFile.prototype.getSha = function getSha(folderName) {
     return remote.sha;
 };
 
-ThriftMetaFile.prototype.getShasums = function getShasums(folderName) {
+MetaFile.prototype.getShasums = function getShasums(folderName) {
     var self = this;
     var remote = self._remotes[folderName];
 
@@ -85,7 +85,7 @@ ThriftMetaFile.prototype.getShasums = function getShasums(folderName) {
     return remote.shasums;
 };
 
-ThriftMetaFile.prototype._updateVersion = function version(opts) {
+MetaFile.prototype._updateVersion = function version(opts) {
     opts = opts || {};
     var self = this;
     var newDate = opts.time ? new Date(opts.time) : new Date();
@@ -94,7 +94,7 @@ ThriftMetaFile.prototype._updateVersion = function version(opts) {
     }
 };
 
-ThriftMetaFile.prototype.updateRecord =
+MetaFile.prototype.updateRecord =
 function updateRecord(folderName, opts, callback) {
     opts = opts || {};
     var self = this;
@@ -110,12 +110,12 @@ function updateRecord(folderName, opts, callback) {
     self.save(callback);
 };
 
-ThriftMetaFile.prototype.getRecord = function (service) {
+MetaFile.prototype.getRecord = function (service) {
     var self = this;
     return self._remotes[service];
 }
 
-ThriftMetaFile.prototype.publish = function publish(opts, callback) {
+MetaFile.prototype.publish = function publish(opts, callback) {
     opts = opts || {};
     var self = this;
     self._updateVersion(opts);
@@ -124,7 +124,7 @@ ThriftMetaFile.prototype.publish = function publish(opts, callback) {
 };
 
 // a lock should be set that delays this if updateRecord is in progress
-ThriftMetaFile.prototype.getDependencies =
+MetaFile.prototype.getDependencies =
 function getDependencies(callback) {
     var self = this;
 
@@ -133,7 +133,7 @@ function getDependencies(callback) {
     })
 };
 
-ThriftMetaFile.prototype.toJSON = function toJSON() {
+MetaFile.prototype.toJSON = function toJSON() {
     var self = this;
     var date = self._lastDate;
 
@@ -162,17 +162,17 @@ ThriftMetaFile.prototype.toJSON = function toJSON() {
     return json;
 };
 
-ThriftMetaFile.prototype.toJSONString = function toJSONString() {
+MetaFile.prototype.toJSONString = function toJSONString() {
     var self = this;
     return JSON.stringify(self.toJSON(), null, 4) + '\n';
 };
 
-ThriftMetaFile.prototype.save = function save(callback) {
+MetaFile.prototype.save = function save(callback) {
     var self = this;
     fs.writeFile(self.fileName, self.toJSONString(), 'utf8', callback);
 };
 
-ThriftMetaFile.prototype.time = function time() {
+MetaFile.prototype.time = function time() {
     var self = this;
     return self._lastDate;
 };

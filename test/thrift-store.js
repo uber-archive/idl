@@ -27,10 +27,10 @@ var path = require('path');
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
 
-TestCluster.test('run `thrift-store list`', {
+TestCluster.test('run `idl list`', {
 }, function t(cluster, assert) {
     parallel({
-        list: cluster.thriftGet.bind(cluster, 'list'),
+        list: cluster.idlGet.bind(cluster, 'list'),
         upstream: cluster.inspectUpstream.bind(cluster)
     }, onResults);
 
@@ -77,11 +77,11 @@ TestCluster.test('run `thrift-store list`', {
     }
 });
 
-TestCluster.test('run `thrift-store install`', {
+TestCluster.test('run `idl install`', {
 }, function t(cluster, assert) {
 
     series([
-        cluster.thriftStoreInstall.bind(cluster, 'github.com/org/b'),
+        cluster.idlInstall.bind(cluster, 'github.com/org/b'),
         parallel.bind(null, {
             upstream: cluster.inspectUpstream.bind(cluster),
             localApp: cluster.inspectLocalApp.bind(cluster)
@@ -96,14 +96,14 @@ TestCluster.test('run `thrift-store install`', {
         var upstream = results[1].upstream;
 
         var installedThriftFile =
-            localApp.thrift['github.com'].org.b['service.thrift'];
+            localApp.idl['github.com'].org.b['service.thrift'];
         // var localAppMetaFile = JSON.parse(localApp.thrift['meta.json']);
 
         assert.end();
     }
 });
 
-TestCluster.test('run `thrift-store publish`', {
+TestCluster.test('run `idl publish`', {
     fetchRemotes: false
 }, function t(cluster, assert) {
 
@@ -112,7 +112,7 @@ TestCluster.test('run `thrift-store publish`', {
     function makePublishThunk(remoteKey) {
         return function publishThunk(callback) {
             var cwd = path.join(cluster.remotesDir, remoteKey);
-            cluster.thriftStorePublish(cwd, callback);
+            cluster.idlPublish(cwd, callback);
         };
     }
 
@@ -131,7 +131,7 @@ TestCluster.test('run `thrift-store publish`', {
         Object.keys(cluster.remoteRepos).forEach(testPublish);
 
         function testPublish(key) {
-            var filepath = 'thrift/github.com/org/' + key.toLowerCase() +
+            var filepath = 'idl/github.com/org/' + key.toLowerCase() +
                 '/service.thrift';
             assert.equal(
                 upstream.files[filepath],
@@ -144,7 +144,7 @@ TestCluster.test('run `thrift-store publish`', {
     }
 });
 
-TestCluster.test('run `thrift-store update`', {
+TestCluster.test('run `idl update`', {
 }, function t(cluster, assert) {
     var thriftIdlContent = '' +
         'service B {\n' +
@@ -153,8 +153,8 @@ TestCluster.test('run `thrift-store update`', {
         '}\n';
 
     series([
-        cluster.thriftGet.bind(cluster, 'install github.com/org/d'),
-        cluster.thriftGet.bind(cluster, 'install github.com/org/b')
+        cluster.idlGet.bind(cluster, 'install github.com/org/d'),
+        cluster.idlGet.bind(cluster, 'install github.com/org/b')
     ], onAdded);
 
     function onAdded(err) {
@@ -163,7 +163,7 @@ TestCluster.test('run `thrift-store update`', {
         }
 
         cluster.updateRemote('B', {
-            thrift: {
+            idl: {
                 'github.com': {
                     'org': {
                         'b': {
@@ -181,11 +181,11 @@ TestCluster.test('run `thrift-store update`', {
         }
 
         cluster.timers.advance(30 * 1000 + 5);
-        cluster.thriftGod.once('fetchedRemotes', onRemotes);
+        cluster.idlDaemon.once('fetchedRemotes', onRemotes);
     }
 
     function onRemotes() {
-        cluster.thriftGet('update', onUpdate);
+        cluster.idlGet('update', onUpdate);
     }
 
     function onUpdate(err) {
@@ -207,7 +207,7 @@ TestCluster.test('run `thrift-store update`', {
         var local = data.local;
         var upstream = data.upstream;
 
-        var localMeta = JSON.parse(local.thrift['meta.json']);
+        var localMeta = JSON.parse(local.idl['meta.json']);
 
         assert.equal(
             localMeta.time,
@@ -228,12 +228,12 @@ TestCluster.test('run `thrift-store update`', {
         );
 
         assert.equal(
-            local.thrift['github.com'].org.b['service.thrift'],
-            upstream.files['thrift/github.com/org/b/service.thrift']
+            local.idl['github.com'].org.b['service.thrift'],
+            upstream.files['idl/github.com/org/b/service.thrift']
         );
         assert.equal(
-            local.thrift['github.com'].org.d['service.thrift'],
-            upstream.files['thrift/github.com/org/d/service.thrift']
+            local.idl['github.com'].org.d['service.thrift'],
+            upstream.files['idl/github.com/org/d/service.thrift']
         );
 
         assert.end();
