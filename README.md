@@ -156,6 +156,31 @@ support.
  - `--verbose` - This tool follows the unix philosophy of being
     silent on success. Use this flag if you want to see output of
     what it is doing.
+ - `--config=<path to config file>` - The path to a JSON config
+    file that specifies any of the above properties.
+
+#### Configuration
+
+Internally thrift-store uses [dominictarr/rc][dominictarr/rc] for
+options configuration. This module helps with parsing configuration
+from arguments specified at the command line, from environment
+variables and from `.rc` files. It will probe the following locations:
+
+Given your application name (`appname`), rc will look in all the obvious places for configuration.
+
+  * command line arguments (parsed by [substack/minimist][substack/minimist])
+  * environment variables prefixed with `THRIFT_STORE_`
+    * or use "\_\_" to indicate nested properties <br/> _(e.g. `THRIFT_STORE_REGISTRY` => `github.com/some-org/some repo`)_
+    * keys will automatically be camelCased to match the possible options
+    above.
+  * if you passed an option `--config file` then from that file
+  * a local `.thriftstorerc` or the first found looking in `./ ../ ../../ ../../../` etc.
+  * `$HOME/.thriftstorerc`
+  * `$HOME/.thriftstore/config`
+  * `$HOME/.config/thriftstore
+  * `$HOME/.config/thriftstore/config`
+  * `/etc/thriftstorerc`
+  * `/etc/thriftstore/config`
 
 ### The `./thrift/` folder
 
@@ -313,3 +338,5 @@ This project is not done yet:
   [dep]: https://david-dm.org/uber/thrift-store
   [npm-png]: https://nodei.co/npm/thrift-store.png?stars&downloads
   [npm]: https://nodei.co/npm/thrift-store
+  [dominictarr/rc]: https://github.com/dominictarr/rc
+  [substack/minimist]: https://github.com/substack/minimist
