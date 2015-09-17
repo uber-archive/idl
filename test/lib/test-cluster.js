@@ -1,3 +1,23 @@
+// Copyright (c) 2015 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 'use strict';
 
 var tape = require('tape');
@@ -15,59 +35,18 @@ var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
-var ThriftGod = require('../../bin/thrift-god.js');
-var ThriftGet = require('../../bin/thrift-get.js');
+var IDLDaemon = require('../../bin/thrift-store-daemon.js');
+var IDL = require('../../bin/thrift-store.js');
+var defineFixture = require('./define-fixture');
 
-var defaultRepos = {
-    'A': {
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service A {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'B': {
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service B {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'C': {
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service C {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    },
-    'D': {
-        branch: 'master',
-        files: {
-            'thrift': {
-                'service.thrift': '' +
-                    'service D {\n' +
-                    '    i32 echo(1:i32 value)\n' +
-                    '}\n'
-            }
-        },
-        localFileName: 'thrift/service.thrift'
-    }
-};
+var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});
+
+function makeFixture(memo, letter) {
+    memo[letter] = defineFixture({
+        name: letter
+    });
+    return memo;
+}
 
 TestCluster.test = wrapCluster(tape, TestCluster);
 
@@ -88,7 +67,9 @@ function TestCluster(opts) {
             acc[name] = self.remoteRepos[name].files;
             return acc;
         }, {});
+
     self.prepareOnly = opts.prepareOnly || false;
+    self.fetchRemotes = opts.fetchRemotes === false ? false : true;
 
     self.fixturesDir = path.join(__dirname, '..', 'fixtures');
     self.remotesDir = path.join(self.fixturesDir, 'remotes');
@@ -119,9 +100,9 @@ function TestCluster(opts) {
             })
     }, opts.config || {});
 
-    self.logger = DebugLogtron('thriftgod');
+    self.logger = DebugLogtron('idl');
     self.timers = TimeMock(0);
-    self.thriftGod = null;
+    self.idlDaemon = null;
 }
 
 TestCluster.prototype.bootstrap = function bootstrap(cb) {
@@ -130,51 +111,46 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
     series([
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
-        createFixtures.bind(
-            null, self.remotesDir, self.repoFixtures
-        ),
-        self.gitify.bind(self),
+        createFixtures.bind(null, self.remotesDir, self.repoFixtures),
+        self.gitifyRemotes.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
-        self.prepareOnly ? null : self.setupThriftGod.bind(self)
+        self.prepareOnly ? null : self.setupIDLDaemon.bind(self)
     ].filter(Boolean), cb);
 };
 
 // git init
 // git a .
 // git commit -m 'initial'
-TestCluster.prototype.gitify = function gitify(cb) {
+TestCluster.prototype.gitifyRemotes = function gitifyRemotes(cb) {
     var self = this;
 
     var keys = Object.keys(self.remoteRepos);
     var tasks = keys.map(function buildThunk(remoteKey) {
         var repoInfo = self.remoteRepos[remoteKey];
         var cwd = path.join(self.remotesDir, remoteKey);
-
-        return function thunk(callback) {
-            series([
-                git('init', {
-                    cwd: cwd
-                }),
-                git('commit --allow-empty -am "initial"', {
-                    cwd: cwd
-                }),
-                repoInfo.branch !== 'master' ?
-                    git('checkout -b ' + repoInfo.branch, {
-                        cwd: cwd
-                    }) : null,
-                git('add --all .', {
-                    cwd: cwd
-                }),
-                git('commit -am "second"', {
-                    cwd: cwd
-                })
-            ].filter(Boolean), callback);
-        };
+        return makeGitifyThunk(cwd, repoInfo);
     });
 
     return parallel(tasks, cb);
 };
+
+function makeGitifyThunk(cwd, repoInfo) {
+    return function gitifyThunk(callback) {
+        var gitOpts = {
+            cwd: cwd
+        };
+        series([
+            git('init', gitOpts),
+            git('remote add origin ' + repoInfo.gitUrl, gitOpts),
+            git('commit --allow-empty -am "initial"', gitOpts),
+            repoInfo.branch !== 'master' ?
+                git('checkout -b ' + repoInfo.branch, gitOpts) : null,
+            git('add --all .', gitOpts),
+            git('commit -am "second"', gitOpts)
+        ].filter(Boolean), callback);
+    };
+}
 
 TestCluster.prototype.updateRemote =
 function updateRemote(name, files, callback) {
@@ -183,7 +159,7 @@ function updateRemote(name, files, callback) {
     var remoteDir = path.join(self.remotesDir, name);
 
     series([
-        rimraf.bind(null, path.join(remoteDir, 'thrift')),
+        rimraf.bind(null, path.join(remoteDir, 'idl')),
         createFixtures.bind(null, remoteDir, files),
         git('add --all .', {
             cwd: remoteDir
@@ -211,28 +187,27 @@ TestCluster.prototype.setupUpstream = function setupUpstream(cb) {
     ], cb);
 };
 
-TestCluster.prototype.writeConfigFile =
-function writeConfigFile(cb) {
+TestCluster.prototype.writeConfigFile = function writeConfigFile(cb) {
     var self = this;
 
     var data = JSON.stringify(self.config, null, '    ') + '\n';
     fs.writeFile(self.configFile, data, 'utf8', cb);
 };
 
-TestCluster.prototype.setupThriftGod =
-function setupThriftGod(cb) {
+TestCluster.prototype.setupIDLDaemon =
+function setupIDLDaemon(cb) {
     var self = this;
 
-    if (self.thriftGod) {
-        self.thriftGod.destroy();
+    if (self.idlDaemon) {
+        self.idlDaemon.destroy();
     }
 
-    self.thriftGod = ThriftGod({
+    self.idlDaemon = IDLDaemon({
         configFile: self.configFile,
         logger: self.logger,
         timers: self.timers
     });
-    self.thriftGod.bootstrap(cb);
+    self.idlDaemon.bootstrap(self.fetchRemotes, cb);
 };
 
 TestCluster.prototype.gitlog = function gitlog(cb) {
@@ -262,19 +237,36 @@ TestCluster.prototype.gittag = function gittag(cb) {
     }, cb);
 };
 
+TestCluster.prototype.gitlsfiles = function gitlsfiles(cb) {
+    var self = this;
+
+    var command = 'git ls-tree --full-tree -r HEAD';
+    exec(command, {
+        cwd: self.upstreamDir
+    }, onlsfiles);
+
+    function onlsfiles(err, stdout, stderr) {
+        if (err) {
+            return cb(err);
+        }
+
+        var files = stdout.trim().split('\n').map(parseFilepaths);
+        cb(null, files);
+    }
+
+    function parseFilepaths(file) {
+        return file.split(/\s/)[3];
+    }
+};
+
 TestCluster.prototype.inspectUpstream =
 function inspectUpstream(callback) {
     var self = this;
 
-    var keys = Object.keys(self.remoteRepos);
-    var remoteTasks = keys.reduce(function b(acc, key) {
-        acc[key] = self.gitshow.bind(self, 'thrift/' + key + '.thrift');
-        return acc;
-    }, {});
-
     parallel({
         gitlog: self.gitlog.bind(self),
         gittag: self.gittag.bind(self),
+        gitlsfiles: self.gitlsfiles.bind(self),
         meta: function thunk(cb) {
             self.gitshow('meta.json', onFile);
 
@@ -285,10 +277,29 @@ function inspectUpstream(callback) {
 
                 cb(null, JSON.parse(file));
             }
-        },
-        thrift: self.gitshow.bind(self, 'thrift'),
-        remotes: parallel.bind(null, remoteTasks)
-    }, callback);
+        }
+    }, readFiles);
+
+    function readFiles(err, results) {
+        if (err) {
+            return callback(err);
+        }
+
+        var fileTasks = results.gitlsfiles.reduce(function b(acc, file) {
+            acc[file] = self.gitshow.bind(self, file);
+            return acc;
+        }, {});
+
+        parallel(fileTasks, function onFiles(readFilesErr, files) {
+            if (readFilesErr) {
+                return callback(readFilesErr);
+            }
+
+            results.files = files;
+
+            callback(null, results);
+        });
+    }
 };
 
 TestCluster.prototype.inspectLocalApp =
@@ -298,14 +309,40 @@ function inspectLocalApp(callback) {
     readDirFiles(self.localApp, 'utf8', callback);
 };
 
-TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
+TestCluster.prototype.idlGet = function idlGet(text, cb) {
     var self = this;
 
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
 
-    return ThriftGet.exec(text, {
+    return IDL.exec(text, {
+        logger: self.logger
+    }, cb);
+};
+
+TestCluster.prototype.idlInstall = function idlInstall(moduleName, cb) {
+    var self = this;
+    var text = 'install ' + moduleName;
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + self.localApp;
+
+    return IDL.exec(text, {
+        logger: self.logger
+    }, cb);
+};
+
+TestCluster.prototype.idlPublish = function idlPublish(cwd, cb) {
+    var self = this;
+    var text = 'publish';
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + cwd;
+
+    return IDL.exec(text, {
         logger: self.logger
     }, cb);
 };
@@ -313,7 +350,7 @@ TestCluster.prototype.thriftGet = function thriftGet(text, cb) {
 TestCluster.prototype.close = function close(cb) {
     var self = this;
 
-    self.thriftGod.destroy();
+    self.idlDaemon.destroy();
     rimraf(self.fixturesDir, cb);
 };
 

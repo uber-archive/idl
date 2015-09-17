@@ -20,5 +20,41 @@
 
 'use strict';
 
-require('./thrift-store-daemon.js');
-require('./thrift-store.js');
+var crypto = require('crypto');
+var readDirFiles = require('read-dir-files').read;
+var traverse = require('traverse');
+var fileFilter = require('./common').fileFilter;
+
+module.exports.sha1 = sha1;
+module.exports.shasumFiles = shasumFiles;
+
+function sha1(content) {
+    var hash = crypto.createHash('sha1');
+    hash.update(content);
+    return hash.digest('hex');
+}
+
+function shasumFiles(dir, callback) {
+    readDirFiles(dir, 'utf8', onFiles);
+
+    function onFiles(err, files) {
+        if (err) {
+            return callback(err);
+        }
+
+        traverse(files).forEach(function filter(value) {
+            if (this.key && !fileFilter(this.key)) {
+                this.remove();
+            }
+        });
+
+        var shasums = Object.keys(files).reduce(hashFile, {});
+
+        callback(null, shasums);
+
+        function hashFile(memo, filename) {
+            memo[filename] = sha1(files[filename]);
+            return memo;
+        }
+    }
+}
