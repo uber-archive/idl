@@ -20,30 +20,41 @@
 
 'use strict';
 
-var assert = require('assert');
-var exec = require('child_process').exec;
+var crypto = require('crypto');
+var readDirFiles = require('read-dir-files').read;
+var traverse = require('traverse');
+var fileFilter = require('./common').fileFilter;
 
-module.exports = gitexec;
+module.exports.sha1 = sha1;
+module.exports.shasumFiles = shasumFiles;
 
-function gitexec(command, options, callback) {
-    options = options || {};
-    assert(options && options.logger, 'logger required');
+function sha1(content) {
+    var hash = crypto.createHash('sha1');
+    hash.update(content);
+    return hash.digest('hex');
+}
 
-    exec(command, options, onExec);
+function shasumFiles(dir, callback) {
+    readDirFiles(dir, 'utf8', onFiles);
 
-    function onExec(err, stdout, stderr) {
-        var level = err ? 'warn' :
-            stderr && !options.ignoreStderr ? 'warn' :
-            'debug';
+    function onFiles(err, files) {
+        if (err) {
+            return callback(err);
+        }
 
-        options.logger[level]('git output', {
-            command: command,
-            stdout: stdout,
-            stderr: stderr,
-            exitCode: err && err.code,
-            cwd: options.cwd
+        traverse(files).forEach(function filter(value) {
+            if (this.key && !fileFilter(this.key)) {
+                this.remove();
+            }
         });
 
-        callback(err, stdout, stderr);
+        var shasums = Object.keys(files).reduce(hashFile, {});
+
+        callback(null, shasums);
+
+        function hashFile(memo, filename) {
+            memo[filename] = sha1(files[filename]);
+            return memo;
+        }
     }
 }
