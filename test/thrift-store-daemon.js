@@ -24,7 +24,7 @@ var TestCluster = require('./lib/test-cluster.js');
 var defineFixture = require('./lib/define-fixture');
 var thriftIdl = require('./lib/thrift-idl');
 
-TestCluster.test('run the thrift-store-daemon', {
+TestCluster.test('run the idl-daemon', {
 }, function t(cluster, assert) {
     cluster.inspectUpstream(onUpstream);
 
@@ -36,11 +36,11 @@ TestCluster.test('run the thrift-store-daemon', {
         assert.deepEqual(
             Object.keys(data.files).sort(),
             [
-                'meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/service.thrift'
+                'idl/github.com/org/a/service.thrift',
+                'idl/github.com/org/b/service.thrift',
+                'idl/github.com/org/c/service.thrift',
+                'idl/github.com/org/d/service.thrift',
+                'meta.json'
             ],
             'Upstream contains all expected files'
         );
@@ -95,25 +95,25 @@ TestCluster.test('run the thrift-store-daemon', {
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/a/service.thrift'],
+            data.files['idl/github.com/org/a/service.thrift'],
             thriftIdl('A'),
             'Correct thrift definition for A'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/b/service.thrift'],
+            data.files['idl/github.com/org/b/service.thrift'],
             thriftIdl('B'),
             'Correct thrift definition for B'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/c/service.thrift'],
+            data.files['idl/github.com/org/c/service.thrift'],
             thriftIdl('C'),
             'Correct thrift definition for C'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/d/service.thrift'],
+            data.files['idl/github.com/org/d/service.thrift'],
             thriftIdl('D'),
             'Correct thrift definition for D'
         );
@@ -148,18 +148,18 @@ TestCluster.test('run with branches', {
         assert.deepEqual(
             Object.keys(data.files).sort(),
             [
-                'meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/service.thrift',
-                'thrift/github.com/org/e/service.thrift'
+                'idl/github.com/org/a/service.thrift',
+                'idl/github.com/org/b/service.thrift',
+                'idl/github.com/org/c/service.thrift',
+                'idl/github.com/org/d/service.thrift',
+                'idl/github.com/org/e/service.thrift',
+                'meta.json'
             ],
             'Upstream contains all expected files'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/e/service.thrift'],
+            data.files['idl/github.com/org/e/service.thrift'],
             thriftIdl('E')
         );
         assert.end();
@@ -171,9 +171,9 @@ TestCluster.test('run with custom localFileName', {
         'E': {
             gitUrl: 'git@github.com:org/e',
             branch: 'master',
-            localFileName: 'thrift/github.com/org/e/foo.thrift',
+            localFileName: 'idl/github.com/org/e/foo.thrift',
             files: {
-                'thrift': {
+                'idl': {
                     'github.com': {
                         'org': {
                             'e': {
@@ -196,18 +196,18 @@ TestCluster.test('run with custom localFileName', {
         assert.deepEqual(
             Object.keys(data.files).sort(),
             [
-                'meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/service.thrift',
-                'thrift/github.com/org/e/foo.thrift'
+                'idl/github.com/org/a/service.thrift',
+                'idl/github.com/org/b/service.thrift',
+                'idl/github.com/org/c/service.thrift',
+                'idl/github.com/org/d/service.thrift',
+                'idl/github.com/org/e/foo.thrift',
+                'meta.json'
             ],
             'Upstream contains all expected files'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/e/foo.thrift'],
+            data.files['idl/github.com/org/e/foo.thrift'],
             thriftIdl('E')
         );
 
@@ -215,17 +215,17 @@ TestCluster.test('run with custom localFileName', {
     }
 });
 
-TestCluster.test('running thrift-store-daemon twice', {
+TestCluster.test('running idl-daemon twice', {
     prepareOnly: true
 }, function t(cluster, assert) {
-    cluster.setupThriftGod(onSetup);
+    cluster.setupIDLDaemon(onSetup);
 
     function onSetup(err) {
         if (err) {
             assert.ifError(err);
         }
 
-        cluster.setupThriftGod(onSetup2);
+        cluster.setupIDLDaemon(onSetup2);
     }
 
     function onSetup2(err) {
@@ -244,11 +244,11 @@ TestCluster.test('running thrift-store-daemon twice', {
         assert.deepEqual(
             Object.keys(data.files).sort(),
             [
-                'meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/service.thrift'
+                'idl/github.com/org/a/service.thrift',
+                'idl/github.com/org/b/service.thrift',
+                'idl/github.com/org/c/service.thrift',
+                'idl/github.com/org/d/service.thrift',
+                'meta.json'
             ],
             'Upstream contains all expected files'
         );
@@ -309,7 +309,7 @@ TestCluster.test('updating a remote', {
         '}\n';
 
     cluster.updateRemote('B', {
-        thrift: {
+        idl: {
             'github.com': {
                 'org': {
                     'b': {
@@ -326,7 +326,7 @@ TestCluster.test('updating a remote', {
         }
 
         cluster.timers.advance(30 * 1000 + 5);
-        cluster.thriftGod.once('fetchedRemotes', onRemotes);
+        cluster.idlDaemon.once('fetchedRemotes', onRemotes);
     }
 
     function onRemotes() {
@@ -355,11 +355,11 @@ TestCluster.test('updating a remote', {
         assert.deepEqual(
             Object.keys(data.files).sort(),
             [
-                'meta.json',
-                'thrift/github.com/org/a/service.thrift',
-                'thrift/github.com/org/b/service.thrift',
-                'thrift/github.com/org/c/service.thrift',
-                'thrift/github.com/org/d/service.thrift'
+                'idl/github.com/org/a/service.thrift',
+                'idl/github.com/org/b/service.thrift',
+                'idl/github.com/org/c/service.thrift',
+                'idl/github.com/org/d/service.thrift',
+                'meta.json'
             ],
             'Upstream contains all expected files'
         );
@@ -394,25 +394,25 @@ TestCluster.test('updating a remote', {
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/a/service.thrift'],
+            data.files['idl/github.com/org/a/service.thrift'],
             thriftIdl('A'),
             'Correct thrift definition for A'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/b/service.thrift'],
+            data.files['idl/github.com/org/b/service.thrift'],
             thriftIdlContent,
             'Correct thrift definition for B'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/c/service.thrift'],
+            data.files['idl/github.com/org/c/service.thrift'],
             thriftIdl('C'),
             'Correct thrift definition for C'
         );
 
         assert.equal(
-            data.files['thrift/github.com/org/d/service.thrift'],
+            data.files['idl/github.com/org/d/service.thrift'],
             thriftIdl('D'),
             'Correct thrift definition for D'
         );

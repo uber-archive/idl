@@ -29,34 +29,34 @@ var cpr = require('cpr');
 var deepEqual = require('deep-equal');
 
 var RemoteCache = require('./remote-cache.js');
-var ThriftMetaFile = require('./thrift-meta-file.js');
+var MetaFile = require('./meta-file.js');
 var gitexec = require('./git-process.js').exec;
 var ServiceName = require('./service-name');
 var sha1 = require('./hasher').sha1;
 var shasumFiles = require('./hasher').shasumFiles;
 var GitCommands = require('./git-commands');
 
-module.exports = ThriftRepository;
+module.exports = Repository;
 
-function ThriftRepository(opts) {
-    if (!(this instanceof ThriftRepository)) {
-        return new ThriftRepository(opts);
+function Repository(opts) {
+    if (!(this instanceof Repository)) {
+        return new Repository(opts);
     }
 
     var self = this;
 
     self.metaFilename = 'meta.json';
-    self.thriftFolderName = 'thrift';
+    self.idlFolderName = 'idl';
     self.thriftExtension = '.thrift';
 
     self.remotes = opts.remotes;
     self.upstream = opts.upstream;
     self.repositoryFolder = opts.repositoryFolder;
 
-    self.thriftFolder = path.join(self.repositoryFolder, self.thriftFolderName);
+    self.idlFolder = path.join(self.repositoryFolder, self.idlFolderName);
     self.logger = opts.logger;
 
-    self.meta = ThriftMetaFile({
+    self.meta = MetaFile({
         fileName: path.join(self.repositoryFolder, self.metaFilename)
     });
     self.remoteCache = RemoteCache({
@@ -68,7 +68,7 @@ function ThriftRepository(opts) {
 }
 
 /* rm -rf repoFolder; */
-ThriftRepository.prototype.bootstrap =
+Repository.prototype.bootstrap =
 function bootstrap(fetchRemotes, callback) {
     if (typeof fetchRemotes === 'function') {
         callback = fetchRemotes;
@@ -117,7 +117,7 @@ function bootstrap(fetchRemotes, callback) {
 };
 
 /* git clone upstream repoFolder */
-ThriftRepository.prototype._cloneRepo =
+Repository.prototype._cloneRepo =
 function _cloneRepo(callback) {
     var self = this;
 
@@ -159,7 +159,7 @@ function _cloneRepo(callback) {
     }
 };
 
-ThriftRepository.prototype.fetchRemotes =
+Repository.prototype.fetchRemotes =
 function fetchRemotes(callback) {
     var self = this;
 
@@ -183,7 +183,7 @@ function fetchRemotes(callback) {
                 });
                 return callback(err2);
             }
-            self._processThriftFiles(remote, onProcessed);
+            self._processIDLFiles(remote, onProcessed);
         }
 
         function onProcessed(err2) {
@@ -200,8 +200,8 @@ function fetchRemotes(callback) {
     }
 };
 
-ThriftRepository.prototype._processThriftFiles =
-function _processThriftFiles(remote, callback) {
+Repository.prototype._processIDLFiles =
+function _processIDLFiles(remote, callback) {
     var self = this;
     var source;
     var destination;
@@ -221,8 +221,8 @@ function _processThriftFiles(remote, callback) {
         }
 
         service = serviceName;
-        source = path.join(remotePath, self.thriftFolderName, serviceName);
-        destination = path.join(self.thriftFolder, serviceName);
+        source = path.join(remotePath, self.idlFolderName, serviceName);
+        destination = path.join(self.idlFolder, serviceName);
 
         shasumFiles(source, onShasums);
 

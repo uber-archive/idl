@@ -1,4 +1,4 @@
-# thrift-store
+# idl
 
 <!--
     [![build status][build-png]][build]
@@ -12,8 +12,8 @@ A CLI for managing thrift IDL files
 
 ## Introduction
 
-`thrift-store` provides a "package manager" for thrift interfaces.
-It comes with two CLI commands, `thrift-store-daemon` and `thrift-store`.
+`idl` provides a "package manager" for thrift interfaces.
+It comes with two CLI commands, `idl-daemon` and `idl`.
 
 ## Motivation
 
@@ -43,29 +43,29 @@ It comes with two CLI commands, `thrift-store-daemon` and `thrift-store`.
 ## The CLI
 
 The CLI is currently broken down into two commands:
- - `thrift-store` - CLI tool meant for end-users, but the publish command
+ - `idl` - CLI tool meant for end-users, but the publish command
      can also be run a continuous integration job when interface changes
      land in production (push-based publishing)
- - `thrift-store-daemon` - daemonized process that can be configured to
+ - `idl-daemon` - daemonized process that can be configured to
      poll all service repositories for interface changes (pull-based
      publishing).
 
-### `thrift-store`
+### `idl`
 
 As a developer I want to be able to talk to other services;
 To do this I need to find their Thrift interface definitions.
 
-The `thrift-store` CLI solves this need.
+The `idl` CLI solves this need.
 
-The `thrift-store` CLI tool has the following sub-commands:
- - `thrift-store list` - List all available services published to the
+The `idl` CLI tool has the following sub-commands:
+ - `idl list` - List all available services published to the
     registry.
- - `thrift-store install <service-name>` - Fetch a particular service
+ - `idl install <service-name>` - Fetch a particular service
     and "install" it in your project in a standard location.
- - `thrift-store update` - Update all "installed" services to the most
+ - `idl update` - Update all "installed" services to the most
     recent versions. Note: You cannot pick and choose which services to
     update. This is intentional.
- - `thrift-store publish` - Publish the Thrift IDL file for your service
+ - `idl publish` - Publish the Thrift IDL file for your service
     to the thrift registry repository. This command should set up to be
     automatically executed when a change to the service IDL lands on
     `master` or when that change on `master` is deployed to production.
@@ -74,19 +74,19 @@ All commands follow the unix standard of being silent if successful. If
 you would like more information about what is happening, run the CLI
 with the `--verbose` flag.
 
-#### `thrift-store list`
+#### `idl list`
 
 This command will list all available services published to the registry.
 
 Example:
 
-    $ thrift-store list
+    $ idl list
      - github.com:/foo/bar   2015-09-11T23:07:57.610Z
      - github.com:/foo/baz   2015-09-11T23:07:58.159Z
      - github.com:/qux/quux  2015-09-11T23:07:58.716Z
     $
 
-#### `thrift-store install <service-name>`
+#### `idl install <service-name>`
 
 This command will fetch a particular service and "install" it in your
 project in a standard location.
@@ -97,7 +97,7 @@ it was last changed.
 
 Note: Installing a new service will result in an implicit update of any
 services that have been installed. For example, if you installed service
-`foo` a month ago and then install service `bar`, `thrift-store` will
+`foo` a month ago and then install service `bar`, `idl` will
 first update service foo to the most current version before installing
 `bar`.
 
@@ -106,10 +106,10 @@ project.
 
 Example:
 
-    $ thrift-store install github.com:/foo/bar
+    $ idl install github.com:/foo/bar
     $
 
-#### `thrift-store update`
+#### `idl update`
 
 This command will update all "installed" services to the most recent
 versions. Note: You cannot pick and choose which services to update.
@@ -124,10 +124,10 @@ project.
 
 Example.
 
-    $ thrift-store update
+    $ idl update
     $
 
-#### `thrift-store publish
+#### `idl publish
 
 This command will publish the Thrift IDL file for your service to the
 thrift registry repository. This command should set up to be
@@ -141,18 +141,18 @@ Example:
 
 #### Command line flags
 
-The `thrift-store` CLI takes the following command line flags. The
+The `idl` CLI takes the following command line flags. The
 first flag, `--repository`, is mandatory until this tool has .rc file
 support.
 
- - `--repository=<git url>` - The `thrift-store` command needs to
+ - `--repository=<git url>` - The `idl` command needs to
     know the git URL of the registry to be able to run any of the
     commands above. e.g. `--repository=git@github.com:foo/registry`
  - `--cacheDir=<path to cache dir>` - This is the path to the cache
-    directory that `thrift-store` should use. The default value is
-    `~/.thrift-store/`
+    directory that `idl` should use. The default value is
+    `~/.idl/`
  - `--cwd=<current working directory>` - The path to the current
-    working directory in which to execute `thrift-store`
+    working directory in which to execute `idl`
  - `--verbose` - This tool follows the unix philosophy of being
     silent on success. Use this flag if you want to see output of
     what it is doing.
@@ -161,7 +161,7 @@ support.
 
 #### Configuration
 
-Internally thrift-store uses [dominictarr/rc][dominictarr/rc] for
+Internally `idl` uses [dominictarr/rc][dominictarr/rc] for
 options configuration. This module helps with parsing configuration
 from arguments specified at the command line, from environment
 variables and from `.rc` files. It will probe the following locations:
@@ -201,20 +201,20 @@ When you execute `git remote -v` in your service's repository, you will
 see output similar to one of the following:
 
     $ git remote -v
-    origin  git@github.com:uber/thrift-store.git (fetch)
-    origin  git@github.com:uber/thrift-store.git (push)
+    origin  git@github.com:uber/foo-service.git (fetch)
+    origin  git@github.com:uber/foo-service.git (push)
 
 or
 
     $ git remote -v
-    origin  ssh://git@github.com/uber/thrift-store.git (fetch)
-    origin  ssh://git@github.com/uber/thrift-store.git (push)
+    origin  ssh://git@github.com/uber/foo-service.git (fetch)
+    origin  ssh://git@github.com/uber/foo-service.git (push)
 
 The thrift folder for your service mirrors these two addresses.
 Assuming the output above, the thrift store path for the service
-being authoring will be `./thrift/github.com/uber/thrift-store/`.
+being authoring will be `./thrift/github.com/uber/foo-service/`.
 This folder will contain the thrift IDL files that will be
-published to your thrift registry repo when `thrift-store publish`
+published to your thrift registry repo when `idl publish`
 is executed. The IDL files in this particular sub-folder are to be
 manually managed by service authors.
 
@@ -264,17 +264,17 @@ evil to support relative file includes. If, in the future, the
 `include` directive supports richer semantics, it may be possible
 to simplify this directory, but for now it is what is is.
 
-### `thrift-store-daemon`
+### `idl-daemon`
 
-The `thrift-store-daemon` will fetch all the remotes and place
+The `idl-daemon` will fetch all the remotes and place
 their thrift files in the `upstream` repository. You can use
-`thrift-store install` to fetch from the upstream repository.
+`idl install` to fetch from the upstream repository.
 
-The `thrift-store-daemon` is a command that should be run with
+The `idl-daemon` is a command that should be run with
 cron.
 
 To set up the thrift interface repository you can run the
-`thrift-store-daemon`. Run `thrift-store-daemon --config-file={path}`
+`idl-daemon`. Run `idl-daemon --config-file={path}`
 and it will populate the thrift remote repository.
 
 The config file contains the following fields
@@ -282,8 +282,8 @@ The config file contains the following fields
 ```json
 {
     "upstream": "git+ssh://git@github.com/my-company/thrift-files",
-    "repositoryFolder": "/var/lib/my-company/thrift-store/repo",
-    "cacheLocation": "/var/lib/my-company/thrift-store/cache",
+    "repositoryFolder": "/var/lib/my-company/idl/repo",
+    "cacheLocation": "/var/lib/my-company/idl/cache",
     "remotes": [{
         "repository": "git+ssh://git@github.com/my-company/user-service",
         "branch": "master",
@@ -300,16 +300,15 @@ The config file contains the following fields
 
 This project is not done yet:
 
- - [ ] Implicit update whenever `thrift-store install` is run.
- - [ ] Implement `thrift-store` config loader (i.e. load .rc file from ~/).
- - [ ] Implement `thrift-store validate` so that service authors can locally
+ - [ ] Implicit update whenever `idl install` is run.
+ - [ ] Implement `idl validate` so that service authors can locally
        validate the thrift IDL files for their service before publishing.
- - [ ] Implement `thrift-store init` to automatically create a boilerplate
+ - [ ] Implement `idl init` to automatically create a boilerplate
        thrift IDL file using the git URL of the remote origin.
- - [ ] Implement `thrift-store config get <property>` to get a thrift-store
+ - [ ] Implement `idl config get <property>` to get a idl
        configuration property.
- - [ ] Implement `thrift-store config set <property> <value>` to set a
-       thrift-store configuration property.
+ - [ ] Implement `idl config set <property> <value>` to set a
+       idl configuration property.
  - [ ] Implement fetching from `remotes` into `upstream`.
  - [ ] Support `main` file in config to indicate service entry point.
  - [ ] Support `branch` in config.
@@ -317,7 +316,7 @@ This project is not done yet:
 
 ## Installation
 
-`npm install thrift-store --global`
+`npm install idl --global`
 
 ## Tests
 

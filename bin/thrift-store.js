@@ -46,35 +46,31 @@ var GitCommands = require('../git-commands');
 var gitexec = require('../git-process.js').exec;
 // var gitspawn = require('../git-process.js').spawn;
 var ServiceName = require('../service-name');
-var ThriftMetaFile = require('../thrift-meta-file.js');
+var MetaFile = require('../meta-file.js');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 var getDependencies = require('../get-dependencies');
 
 var envPrefixes = [
-    'THRIFT_STORE',
-    'THRIFTSTORE',
-    'thrift_store',
-    'thriftstore'
+    'IDL'
 ];
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
 
 /*eslint no-console: 0, no-process-exit:0 */
-module.exports = ThriftStore;
+module.exports = IDL;
 
 function main() {
     var argv = parseArgs(process.argv.slice(2));
 
     var conf = extend(
-        rc('thriftstore', {}, argv),
+        rc('idl', {}, argv),
         env(),
         argv
     );
 
-    var thriftGet = ThriftStore(conf);
-    thriftGet.processArgs(function onFini(err, text) {
+    IDL(conf).processArgs(function onFini(err, text) {
         if (err) {
             console.error('ERR: ' + err);
             process.exit(1);
@@ -101,9 +97,9 @@ function env() {
     }
 }
 
-function ThriftStore(opts) {
-    if (!(this instanceof ThriftStore)) {
-        return new ThriftStore(opts);
+function IDL(opts) {
+    if (!(this instanceof IDL)) {
+        return new IDL(opts);
     }
 
     var self = this;
@@ -118,10 +114,10 @@ function ThriftStore(opts) {
     self.helpFlag = opts.h || opts.help;
 
     self.cacheDir = opts.cacheDir ||
-        path.join(HOME, '.thrift-store', 'upstream-cache');
+        path.join(HOME, '.idl', 'upstream-cache');
     self.cwd = opts.cwd || process.cwd();
 
-    self.logger = opts.logger || DebugLogtron('thriftstore');
+    self.logger = opts.logger || DebugLogtron('idl');
 
     self.repoHash = sha1(self.repository);
     self.repoCacheLocation = path.join(
@@ -129,41 +125,40 @@ function ThriftStore(opts) {
     );
 
     self.metaFilename = 'meta.json';
-    self.thriftFolder = 'thrift';
-    self.thriftExtension = '.thrift';
+    self.idlFolder = 'idl';
 
     self.meta = null;
 
     self.getServiceName = ServiceName(self.logger);
 }
 
-ThriftStore.prototype.help = help;
-ThriftStore.prototype.processArgs = processArgs;
+IDL.prototype.help = help;
+IDL.prototype.processArgs = processArgs;
 
-ThriftStore.prototype.list = list;
-ThriftStore.prototype.install = install;
-ThriftStore.prototype.publish = publish;
-ThriftStore.prototype.update = update;
-ThriftStore.prototype.fetchRepository = fetchRepository;
-ThriftStore.prototype.cloneRepository = cloneRepository;
-ThriftStore.prototype.pullRepository = pullRepository;
+IDL.prototype.list = list;
+IDL.prototype.install = install;
+IDL.prototype.publish = publish;
+IDL.prototype.update = update;
+IDL.prototype.fetchRepository = fetchRepository;
+IDL.prototype.cloneRepository = cloneRepository;
+IDL.prototype.pullRepository = pullRepository;
 
-ThriftStore.exec = function exec(string, options, cb) {
+IDL.exec = function exec(string, options, cb) {
     if (typeof options === 'function') {
         cb = options;
         options = {};
     }
 
     var opts = extend(options, parseArgs(string.split(' ')));
-    var thriftStore = ThriftStore(opts);
+    var idl = IDL(opts);
 
-    thriftStore.processArgs(cb);
-    return thriftStore;
+    idl.processArgs(cb);
+    return idl;
 };
 
 function help() {
     var helpText = [
-        'usage: thrift-store --repository=<repo> [--help] [-h]',
+        'usage: idl --repository=<repo> [--help] [-h]',
         '                    <command> <args>',
         '',
         'Where <command> is one of:',
@@ -225,10 +220,10 @@ function list(cb) {
 function installFromMeta(cb) {
     var self = this;
 
-    var localMeta = ThriftMetaFile({
+    var localMeta = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.thriftFolder,
+            self.idlFolder,
             self.metaFilename
         )
     });
@@ -267,10 +262,10 @@ function install(service, cb) {
         return installFromMeta.call(self, cb);
     }
 
-    var clientMetaFile = ThriftMetaFile({
+    var clientMetaFile = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.thriftFolder,
+            self.idlFolder,
             self.metaFilename
         )
     });
@@ -303,13 +298,13 @@ function install(service, cb) {
 
         var destination = path.join(
             self.cwd,
-            self.thriftFolder,
+            self.idlFolder,
             service
         );
 
         var source = path.join(
             self.repoCacheLocation,
-            self.thriftFolder,
+            self.idlFolder,
             service
         );
 
@@ -398,10 +393,10 @@ function publish(cb) {
 
         destination = path.join(
             self.repoCacheLocation,
-            self.thriftFolder,
+            self.idlFolder,
             service
         );
-        source = path.join(self.cwd, self.thriftFolder, service);
+        source = path.join(self.cwd, self.idlFolder, service);
         cpr(source, destination, onCopied);
     }
 
@@ -452,7 +447,7 @@ function publish(cb) {
 function update(cb) {
     var self = this;
 
-    var metaFile = path.join(self.cwd, self.thriftFolder, self.metaFilename);
+    var metaFile = path.join(self.cwd, self.idlFolder, self.metaFilename);
     readJSON(metaFile, onMeta);
 
     function onMeta(err, meta) {
@@ -502,7 +497,7 @@ function fetchRepository(cb) {
             return cb(err);
         }
 
-        self.meta = ThriftMetaFile({
+        self.meta = MetaFile({
             fileName: path.join(self.repoCacheLocation, self.metaFilename)
         });
 

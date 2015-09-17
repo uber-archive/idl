@@ -34,21 +34,21 @@ var globalTimers = require('timers');
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
-var ThriftRepository = require('../thrift-repository.js');
+var Repository = require('../repository.js');
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
 
-module.exports = ThriftGod;
+module.exports = IDLDaemon;
 
 function main() {
     var argv = parseArgs(process.argv.slice(2));
-    var thriftGod = ThriftGod(argv);
-    thriftGod.on('error', function onRemote(err) {
+    var idlDaemon = IDLDaemon(argv);
+    idlDaemon.on('error', function onRemote(err) {
         console.error('ERR: ', err);
         process.exit(1);
     });
-    thriftGod.bootstrap(function onFini(err) {
+    idlDaemon.bootstrap(function onFini(err) {
         if (err) {
             console.error('ERR: ', err);
             process.exit(1);
@@ -57,9 +57,9 @@ function main() {
 }
 
 /*eslint no-console: 0, no-process-exit: 0 */
-function ThriftGod(opts) {
-    if (!(this instanceof ThriftGod)) {
-        return new ThriftGod(opts);
+function IDLDaemon(opts) {
+    if (!(this instanceof IDLDaemon)) {
+        return new IDLDaemon(opts);
     }
 
     var self = this;
@@ -70,18 +70,18 @@ function ThriftGod(opts) {
         return self.help();
     }
 
-    self.logger = opts.logger || DebugLogtron('thriftstore');
+    self.logger = opts.logger || DebugLogtron('idl');
     self.timers = opts.timers || globalTimers;
     self.configFile = opts['config-file'] || opts.configFile;
     assert(self.configFile, '--config-file is required');
 
     self.config = null;
-    self.thriftRepo = null;
+    self.idlRepo = null;
     self.timer = null;
 }
-util.inherits(ThriftGod, EventEmitter);
+util.inherits(IDLDaemon, EventEmitter);
 
-ThriftGod.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
+IDLDaemon.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
     if (typeof fetchRemotes === 'function') {
         cb = fetchRemotes;
         fetchRemotes = true;
@@ -97,8 +97,8 @@ ThriftGod.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
             return cb(err);
         }
 
-        self.config = ThriftGodConfig(data);
-        self.thriftRepo = ThriftRepository({
+        self.config = IDLDaemonConfig(data);
+        self.repo = Repository({
             remotes: self.config.remotes,
             upstream: self.config.upstream,
             repositoryFolder: self.config.repositoryFolder,
@@ -106,7 +106,7 @@ ThriftGod.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
             logger: self.logger
         });
 
-        self.thriftRepo.bootstrap(fetchRemotes, onBootstrap);
+        self.repo.bootstrap(fetchRemotes, onBootstrap);
     }
 
     function onBootstrap(err) {
@@ -120,7 +120,7 @@ ThriftGod.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
     }
 };
 
-ThriftGod.prototype.repeat = function repeat() {
+IDLDaemon.prototype.repeat = function repeat() {
     var self = this;
 
     self.timers.setTimeout(
@@ -128,7 +128,7 @@ ThriftGod.prototype.repeat = function repeat() {
     );
 
     function fetchRemotes() {
-        self.thriftRepo.fetchRemotes(onRemote);
+        self.repo.fetchRemotes(onRemote);
     }
 
     function onRemote(err) {
@@ -141,20 +141,20 @@ ThriftGod.prototype.repeat = function repeat() {
     }
 };
 
-ThriftGod.prototype.help = function help() {
-    console.log('usage: thrift-store [--help] [-h]');
+IDLDaemon.prototype.help = function help() {
+    console.log('usage: idl-daemon [--help] [-h]');
     console.log('                    --config-file=<file>');
 };
 
-ThriftGod.prototype.destroy = function destroy() {
+IDLDaemon.prototype.destroy = function destroy() {
     var self = this;
 
     self.timers.clearTimeout(self.timer);
 };
 
-function ThriftGodConfig(data) {
-    if (!(this instanceof ThriftGodConfig)) {
-        return new ThriftGodConfig(data);
+function IDLDaemonConfig(data) {
+    if (!(this instanceof IDLDaemonConfig)) {
+        return new IDLDaemonConfig(data);
     }
 
     var self = this;
@@ -177,16 +177,16 @@ function ThriftGodConfig(data) {
     self.fetchInterval = data.fetchInterval;
 
     self.repositoryFolder = data.repositoryFolder || path.join(
-        os.tmpDir(), 'thrift-store', new Date().toISOString()
+        os.tmpDir(), 'idl', new Date().toISOString()
     );
     self.cacheLocation = data.cacheLocation || path.join(
-        HOME, '.thrift-store', 'remote-cache'
+        HOME, '.idl', 'remote-cache'
     );
 
     self.remotes = [];
     for (var i = 0; i < data.remotes.length; i++) {
         var remote = data.remotes[i];
-        self.remotes.push(ThriftRemote({
+        self.remotes.push(Remote({
             repository: remote.repository,
             branch: remote.branch,
             localFileName: remote.localFileName,
@@ -195,9 +195,9 @@ function ThriftGodConfig(data) {
     }
 }
 
-function ThriftRemote(opts) {
-    if (!(this instanceof ThriftRemote)) {
-        return new ThriftRemote(opts);
+function Remote(opts) {
+    if (!(this instanceof Remote)) {
+        return new Remote(opts);
     }
 
     var self = this;
@@ -208,7 +208,7 @@ function ThriftRemote(opts) {
     self.repository = opts.repository;
     self.branch = opts.branch || 'master';
     self.localFileName = opts.localFileName ||
-        'thrift/service.thrift';
+        'idl/service.thrift';
     self.folderName = null;
 
     var parts;

@@ -29,7 +29,7 @@ function defineFixture(opts) {
         gitUrl: 'git@github.com:org/' + opts.name.toLowerCase(),
         branch: opts.branch || 'master',
         files: {
-            'thrift': {
+            'idl': {
                 'github.com': {
                     'org': {}
                 }
@@ -37,7 +37,7 @@ function defineFixture(opts) {
         }
     };
 
-    fixture.files.thrift['github.com'].org[opts.name.toLowerCase()] = {
+    fixture.files.idl['github.com'].org[opts.name.toLowerCase()] = {
         'service.thrift': thriftIdl(opts.name)
     };
 

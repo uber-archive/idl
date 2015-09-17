@@ -1,5 +1,5 @@
 {
-  "name": "thrift-store",
+  "name": "idl",
   "version": "2.1.2",
   "description": "A CLI for managing thrift IDL files",
   "keywords": [],
@@ -11,8 +11,8 @@
   "main": "index",
   "homepage": "https://github.com/uber/thrift-store",
   "bin": {
-    "thrift-store": "bin/thrift-store.js",
-    "thrift-store-daemon": "bin/thrift-store-daemon.js"
+    "idl": "bin/thrift-store.js",
+    "idl-daemon": "bin/thrift-store-daemon.js"
   },
   "bugs": {
     "url": "https://github.com/uber/thrift-store-daemon/issues",

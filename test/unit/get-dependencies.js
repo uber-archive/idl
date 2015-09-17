@@ -30,7 +30,7 @@ var getDependencies = require('../../get-dependencies');
 
 var fixturesPath = path.resolve(__dirname, '../fixtures');
 var fixtures = {
-    thrift: {
+    idl: {
         'github.com': {
             'a-team': {
                 foo: {
@@ -75,7 +75,7 @@ var makeFixtures = withFixtures(fixturesPath, fixtures);
 test('getServiceDependenciesFromIncludes',
     withFixtures(fixturesPath, fixtures, function t(assert) {
     getDependencies(
-        path.resolve(__dirname, '../fixtures/thrift/github.com/a-team/foo'),
+        path.resolve(__dirname, '../fixtures/idl/github.com/a-team/foo'),
         function onIncludes(err, serviceDependencies) {
             if (err) {
                 assert.ifError(err);
