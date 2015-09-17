@@ -22,8 +22,6 @@
 
 var rimraf = require('rimraf');
 var path = require('path');
-var fs = require('fs');
-var template = require('string-template');
 var mkdirp = require('mkdirp');
 var cpr = require('cpr');
 var deepEqual = require('deep-equal');
@@ -32,7 +30,6 @@ var RemoteCache = require('./remote-cache.js');
 var MetaFile = require('./meta-file.js');
 var gitexec = require('./git-process.js').exec;
 var ServiceName = require('./service-name');
-var sha1 = require('./hasher').sha1;
 var shasumFiles = require('./hasher').shasumFiles;
 var GitCommands = require('./git-commands');
 

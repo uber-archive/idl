@@ -110,10 +110,10 @@ function updateRecord(folderName, opts, callback) {
     self.save(callback);
 };
 
-MetaFile.prototype.getRecord = function (service) {
+MetaFile.prototype.getRecord = function getRecord(service) {
     var self = this;
     return self._remotes[service];
-}
+};
 
 MetaFile.prototype.publish = function publish(opts, callback) {
     opts = opts || {};
@@ -124,13 +124,12 @@ MetaFile.prototype.publish = function publish(opts, callback) {
 };
 
 // a lock should be set that delays this if updateRecord is in progress
-MetaFile.prototype.getDependencies =
-function getDependencies(callback) {
+MetaFile.prototype.getDependencies = function getDependencies(callback) {
     var self = this;
 
     setImmediate(function onSetImmediate() {
         callback(null, self._remotes);
-    })
+    });
 };
 
 MetaFile.prototype.toJSON = function toJSON() {

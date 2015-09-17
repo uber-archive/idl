@@ -24,7 +24,6 @@ var readDirFiles = require('read-dir-files').read;
 var traverse = require('traverse');
 var path = require('path');
 var dirname = path.dirname;
-var uniq = require('uniq');
 
 module.exports = getIncludes;
 
@@ -43,13 +42,15 @@ function getIncludes(directory, callback) {
     var thriftDir = dirname(dirname(dirname(directory)));
     var currentModule = path.relative(thriftDir, directory);
 
-    resolveAllInstalledDependencies(thriftDir, function onDependencyMap(err, dependencyMap) {
+    resolveAllInstalledDependencies(thriftDir, onDependencyMap);
+
+    function onDependencyMap(err, dependencyMap) {
         if (err) {
             return callback(err);
         }
 
         callback(null, dependencyMap[currentModule] || []);
-    });
+    }
 }
 
 function resolveAllInstalledDependencies(thriftDir, callback) {
@@ -66,17 +67,29 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
     }
 
     function acc(memo, value) {
-        if (this.isLeaf && (this.path[this.path.length - 1].indexOf('.thrift') !== -1)) {
+        if (this.isLeaf &&
+            (this.path[this.path.length - 1].indexOf('.thrift') !== -1)) {
 
-            var dir = this.path.slice(0, this.path.length -1).join('/');
+            var dir = this.path.slice(0, this.path.length - 1).join('/');
             var includes = parseIncludes(value);
             if (includes.length > 0) {
-                memo[dir] = [].concat(includes.map(function(relativeInclude){
-                    var absoluteInclude = path.resolve(thriftDir, dir, relativeInclude);
-                    return path.dirname(absoluteInclude.substr(thriftDir.length + 1, absoluteInclude.length - 1));
-                }));
+                memo[dir] = [].concat(includes.map(pathToServiceName));
             }
         }
         return memo;
+
+        function pathToServiceName(relativeInclude) {
+            var absoluteInclude = path.resolve(
+                thriftDir,
+                dir,
+                relativeInclude
+            );
+            return path.dirname(
+                absoluteInclude.substr(
+                    thriftDir.length + 1,
+                    absoluteInclude.length - 1
+                )
+            );
+        }
     }
 }

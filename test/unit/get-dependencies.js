@@ -22,7 +22,6 @@
 
 var test = require('tape');
 var path = require('path');
-var createFixtures = require('fixtures-fs/create-fixtures');
 var withFixtures = require('fixtures-fs');
 
 var thriftIdl = require('../lib/thrift-idl');
@@ -69,8 +68,6 @@ var fixtures = {
         'meta.json': ''
     }
 };
-
-var makeFixtures = withFixtures(fixturesPath, fixtures);
 
 test('getServiceDependenciesFromIncludes',
     withFixtures(fixturesPath, fixtures, function t(assert) {

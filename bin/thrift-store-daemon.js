@@ -189,7 +189,6 @@ function IDLDaemonConfig(data) {
         self.remotes.push(Remote({
             repository: remote.repository,
             branch: remote.branch,
-            localFileName: remote.localFileName,
             strategy: self.fileNameStrategy
         }));
     }
@@ -207,8 +206,6 @@ function Remote(opts) {
 
     self.repository = opts.repository;
     self.branch = opts.branch || 'master';
-    self.localFileName = opts.localFileName ||
-        'idl/service.thrift';
     self.folderName = null;
 
     var parts;
