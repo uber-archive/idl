@@ -36,6 +36,10 @@ var parallel = require('run-parallel');
 var rimraf = require('rimraf');
 var cpr = require('cpr');
 var template = require('string-template');
+var rc = require('rc');
+var rcUtils = require('rc/lib/utils');
+var camelCaseKeys = require('camelcase-keys');
+var traverse = require('traverse');
 
 var GitCommands = require('../git-commands');
 
@@ -47,6 +51,13 @@ var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 var getDependencies = require('../get-dependencies');
 
+var envPrefixes = [
+    'THRIFT_STORE',
+    'THRIFTSTORE',
+    'thrift_store',
+    'thriftstore'
+];
+
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
 
@@ -55,7 +66,14 @@ module.exports = ThriftStore;
 
 function main() {
     var argv = parseArgs(process.argv.slice(2));
-    var thriftGet = ThriftStore(argv);
+
+    var conf = extend(
+        rc('thriftstore', {}, argv),
+        env(),
+        argv
+    );
+
+    var thriftGet = ThriftStore(conf);
     thriftGet.processArgs(function onFini(err, text) {
         if (err) {
             console.error('ERR: ' + err);
@@ -66,6 +84,21 @@ function main() {
             console.log(text.toString());
         }
     });
+}
+
+function env() {
+    return envPrefixes.reduce(getEnvConf, {});
+
+    function getEnvConf(memo, prefix) {
+        var envConf = rcUtils.env(prefix + '_');
+        return extend(memo, traverse(envConf).map(camelcaseObjectKeys));
+    }
+
+    function camelcaseObjectKeys(value) {
+        if (typeof value === 'object') {
+            this.update(camelCaseKeys(value));
+        }
+    }
 }
 
 function ThriftStore(opts) {
