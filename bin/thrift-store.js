@@ -33,9 +33,7 @@ var extend = require('xtend');
 var textTable = require('text-table');
 var readJSON = require('read-json');
 var parallel = require('run-parallel');
-var rimraf = require('rimraf');
 var cpr = require('cpr');
-var template = require('string-template');
 var rc = require('rc');
 var rcUtils = require('rc/lib/utils');
 var camelCaseKeys = require('camelcase-keys');
@@ -49,7 +47,7 @@ var ServiceName = require('../service-name');
 var MetaFile = require('../meta-file.js');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
-var getDependencies = require('../get-dependencies');
+// var getDependencies = require('../get-dependencies');
 
 var envPrefixes = [
     'IDL'
@@ -142,6 +140,7 @@ IDL.prototype.update = update;
 IDL.prototype.fetchRepository = fetchRepository;
 IDL.prototype.cloneRepository = cloneRepository;
 IDL.prototype.pullRepository = pullRepository;
+IDL.prototype.checkoutRef = checkoutRef;
 
 IDL.exec = function exec(string, options, cb) {
     if (typeof options === 'function') {
@@ -236,7 +235,7 @@ function installFromMeta(cb) {
         }
 
         var version = localMeta.toJSON().version;
-        checkoutRef.call(self, 'v' + version, onCheckoutRegistryTag);
+        self.checkoutRef('v' + version, onCheckoutRegistryTag);
     }
 
     function onCheckoutRegistryTag(err) {
@@ -281,7 +280,7 @@ function install(service, cb) {
         var existsInRegistry = !!self.meta.toJSON().remotes[service];
 
         if (!existsInRegistry) {
-            cb(new Error('That service is not in the registry'))
+            cb(new Error('That service is not in the registry'));
         }
 
         if (alreadyInstalled) {
@@ -322,9 +321,9 @@ function install(service, cb) {
 
         clientMetaFile.readFile(onReadFile);
 
-        function onReadFile(err) {
-            if (err) {
-                return cb (err);
+        function onReadFile(err2) {
+            if (err2) {
+                return cb(err2);
             }
 
             clientMetaFile.updateRecord(
@@ -427,7 +426,7 @@ function publish(cb) {
         }
 
         var files = [
-            self.meta.fileName,
+            self.meta.fileName
         ].concat(Object.keys(newShasums).map(getFilepath));
 
         GitCommands.addCommitTagAndPushToOrigin({
@@ -489,10 +488,10 @@ function fetchRepository(cb) {
             return cb(err);
         }
 
-        checkoutRef('master', onFetched);
+        self.checkoutRef('master', onRepoFetched);
     }
 
-    function onFetched(err) {
+    function onRepoFetched(err) {
         if (err) {
             return cb(err);
         }

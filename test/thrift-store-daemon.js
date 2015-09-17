@@ -166,55 +166,6 @@ TestCluster.test('run with branches', {
     }
 });
 
-TestCluster.test('run with custom localFileName', {
-    remoteRepos: {
-        'E': {
-            gitUrl: 'git@github.com:org/e',
-            branch: 'master',
-            localFileName: 'idl/github.com/org/e/foo.thrift',
-            files: {
-                'idl': {
-                    'github.com': {
-                        'org': {
-                            'e': {
-                                'foo.thrift': thriftIdl('E')
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}, function t(cluster, assert) {
-    cluster.inspectUpstream(onUpstream);
-
-    function onUpstream(err, data) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        assert.deepEqual(
-            Object.keys(data.files).sort(),
-            [
-                'idl/github.com/org/a/service.thrift',
-                'idl/github.com/org/b/service.thrift',
-                'idl/github.com/org/c/service.thrift',
-                'idl/github.com/org/d/service.thrift',
-                'idl/github.com/org/e/foo.thrift',
-                'meta.json'
-            ],
-            'Upstream contains all expected files'
-        );
-
-        assert.equal(
-            data.files['idl/github.com/org/e/foo.thrift'],
-            thriftIdl('E')
-        );
-
-        assert.end();
-    }
-});
-
 TestCluster.test('running idl-daemon twice', {
     prepareOnly: true
 }, function t(cluster, assert) {

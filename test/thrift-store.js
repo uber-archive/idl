@@ -97,7 +97,18 @@ TestCluster.test('run `idl install`', {
 
         var installedThriftFile =
             localApp.idl['github.com'].org.b['service.thrift'];
-        // var localAppMetaFile = JSON.parse(localApp.thrift['meta.json']);
+        var localAppMetaFile = JSON.parse(localApp.idl['meta.json']);
+
+        assert.equal(
+            installedThriftFile,
+            upstream.files['idl/github.com/org/b/service.thrift'],
+            'Correct IDL file contents'
+        );
+
+        assert.equal(
+            localAppMetaFile.time,
+            upstream.meta.remotes['github.com/org/b'].time
+        );
 
         assert.end();
     }
@@ -234,6 +245,12 @@ TestCluster.test('run `idl update`', {
         assert.equal(
             local.idl['github.com'].org.d['service.thrift'],
             upstream.files['idl/github.com/org/d/service.thrift']
+        );
+
+        assert.equal(
+            local.idl['github.com'].org.b['service.thrift'],
+            thriftIdlContent,
+            'Updated IDL has correct newer IDL content'
         );
 
         assert.end();
