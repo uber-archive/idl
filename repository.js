@@ -32,6 +32,7 @@ var gitexec = require('./git-process.js').exec;
 var ServiceName = require('./service-name');
 var shasumFiles = require('./hasher').shasumFiles;
 var GitCommands = require('./git-commands');
+var common = require('./common');
 
 module.exports = Repository;
 
@@ -248,7 +249,8 @@ function _processIDLFiles(remote, callback) {
         cpr(source, destination, {
             deleteFirst: true,
             overwrite: true,
-            confirm: true
+            confirm: true,
+            filter: common.fileFilter
         }, onCopied);
     }
 

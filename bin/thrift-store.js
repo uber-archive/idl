@@ -48,6 +48,7 @@ var MetaFile = require('../meta-file.js');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 // var getDependencies = require('../get-dependencies');
+var common = require('../common');
 
 var envPrefixes = [
     'IDL'
@@ -310,7 +311,8 @@ function install(service, cb) {
         cpr(source, destination, {
             deleteFirst: true,
             overwrite: true,
-            confirm: true
+            confirm: true,
+            filter: common.fileFilter
         }, onCopied);
     }
 
@@ -396,7 +398,12 @@ function publish(cb) {
             service
         );
         source = path.join(self.cwd, self.idlFolder, service);
-        cpr(source, destination, onCopied);
+        cpr(source, destination, {
+            deleteFirst: true,
+            overwrite: true,
+            confirm: true,
+            filter: common.fileFilter
+        }, onCopied);
     }
 
     function onCopied(err) {
