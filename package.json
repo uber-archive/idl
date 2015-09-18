@@ -7,15 +7,15 @@
     "Andrew de Andrade <aandrade@uber.com>",
     "Jake Verbaten <jakev@uber.com>"
   ],
-  "repository": "git://github.com/uber/thrift-store.git",
+  "repository": "git://github.com/uber/idl.git",
   "main": "index",
-  "homepage": "https://github.com/uber/thrift-store",
+  "homepage": "https://github.com/uber/idl",
   "bin": {
-    "idl": "bin/thrift-store.js",
-    "idl-daemon": "bin/thrift-store-daemon.js"
+    "idl": "bin/idl.js",
+    "idl-daemon": "bin/idl-daemon.js"
   },
   "bugs": {
-    "url": "https://github.com/uber/thrift-store-daemon/issues",
+    "url": "https://github.com/uber/idl/issues",
     "email": "aandrade@uber.com"
   },
   "dependencies": {
@@ -52,7 +52,7 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/uber/thrift-store/raw/master/LICENSE"
+      "url": "http://github.com/uber/idl/raw/master/LICENSE"
     }
   ],
   "scripts": {
