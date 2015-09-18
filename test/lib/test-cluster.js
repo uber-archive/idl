@@ -35,8 +35,8 @@ var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
-var IDLDaemon = require('../../bin/thrift-store-daemon.js');
-var IDL = require('../../bin/thrift-store.js');
+var IDLDaemon = require('../../bin/idl-daemon.js');
+var IDL = require('../../bin/idl.js');
 var defineFixture = require('./define-fixture');
 
 var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});
@@ -194,8 +194,7 @@ TestCluster.prototype.writeConfigFile = function writeConfigFile(cb) {
     fs.writeFile(self.configFile, data, 'utf8', cb);
 };
 
-TestCluster.prototype.setupIDLDaemon =
-function setupIDLDaemon(cb) {
+TestCluster.prototype.setupIDLDaemon = function setupIDLDaemon(cb) {
     var self = this;
 
     if (self.idlDaemon) {

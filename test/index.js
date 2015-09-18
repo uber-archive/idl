@@ -20,5 +20,5 @@
 
 'use strict';
 
-require('./thrift-store-daemon.js');
-require('./thrift-store.js');
+require('./idl-daemon.js');
+require('./idl.js');

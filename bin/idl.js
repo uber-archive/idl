@@ -529,7 +529,7 @@ function cloneRepository(cb) {
         gitexec(command, {
             cwd: cwd,
             logger: self.logger,
-            ignoreStderr: false
+            ignoreStderr: true
         }, cb);
     }
 }
