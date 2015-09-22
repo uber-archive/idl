@@ -46,6 +46,7 @@
     "tape": "^3.4.0",
     "tape-cluster": "2.0.0",
     "time-mock": "0.1.2",
+    "timekeeper": "0.0.5",
     "uber-licence": "^1.5.1",
     "uber-standard": "3.6.4"
   },

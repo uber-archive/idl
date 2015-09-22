@@ -23,9 +23,17 @@
 var parallel = require('run-parallel');
 var series = require('run-series');
 var path = require('path');
+var tk = require('timekeeper');
+var template = require('string-template');
 
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
+
+var updatedThriftIdlTemplate = '' +
+    'service {remoteName} {\n' +
+    '    i32 echo(1:i32 value)\n' +
+    '    i64 echo64(1:i64 value)\n' +
+    '}\n';
 
 TestCluster.test('run `idl list`', {
 }, function t(cluster, assert) {
@@ -80,36 +88,34 @@ TestCluster.test('run `idl list`', {
 TestCluster.test('run `idl install`', {
 }, function t(cluster, assert) {
 
-    series([
-        cluster.idlInstall.bind(cluster, 'github.com/org/b'),
-        parallel.bind(null, {
-            upstream: cluster.inspectUpstream.bind(cluster),
-            localApp: cluster.inspectLocalApp.bind(cluster)
-        })
-    ], onResults);
+    var now = Date.now();
+
+    var install = installRemote(
+        cluster,
+        'github.com/org/b',
+        now + 1000,
+        true
+    );
+
+    install(onResults);
 
     function onResults(err, results) {
         if (err) {
             assert.ifError(err);
         }
-        var localApp = results[1].localApp;
-        var upstream = results[1].upstream;
-
-        var installedThriftFile =
-            localApp.idl['github.com'].org.b['service.thrift'];
-        var localAppMetaFile = JSON.parse(localApp.idl['meta.json']);
 
         assert.equal(
-            installedThriftFile,
-            upstream.files['idl/github.com/org/b/service.thrift'],
+            results.local.idl['github.com'].org.b['service.thrift'],
+            results.upstream.files['idl/github.com/org/b/service.thrift'],
             'Correct IDL file contents'
         );
 
         assert.equal(
-            localAppMetaFile.time,
-            upstream.meta.remotes['github.com/org/b'].time
+            results.local.idl['meta.json'].time,
+            results.upstream.meta.remotes['github.com/org/b'].time
         );
 
+        tk.reset();
         assert.end();
     }
 });
@@ -118,18 +124,13 @@ TestCluster.test('run `idl publish`', {
     fetchRemotes: false
 }, function t(cluster, assert) {
 
-    var tasks = Object.keys(cluster.remoteRepos).map(makePublishThunk);
-
-    function makePublishThunk(remoteKey) {
-        return function publishThunk(callback) {
-            var cwd = path.join(cluster.remotesDir, remoteKey);
-            cluster.idlPublish(cwd, callback);
-        };
-    }
+    var now = Date.now();
 
     series([
-        series.bind(null, tasks),
-        cluster.inspectUpstream.bind(cluster)
+        publishRemote(cluster, 'A', now + 1000, false),
+        publishRemote(cluster, 'A', now + 2000, false),
+        updateRemote(cluster, 'A', now + 3000, false),
+        publishRemote(cluster, 'A', now + 4000, false)
     ], onResults);
 
     function onResults(err, results) {
@@ -137,122 +138,259 @@ TestCluster.test('run `idl publish`', {
             assert.ifError(err);
         }
 
-        var upstream = results[1];
+        var filepath = 'idl/github.com/org/a/service.thrift';
+        assert.equal(
+            results[0].upstream.files[filepath],
+            thriftIdl('A'),
+            'Correct published thrift file for service A (published for the first time)'
+        );
+        assert.equal(
+            results[0].upstream.meta.version,
+            now + 1000,
+            'Correct version (published for the first time)'
+        );
+        assert.equal(
+            results[1].upstream.files[filepath],
+            thriftIdl('A'),
+            'Correct published thrift file for service A (publish run again on unchanged thrift file)'
+        );
+        assert.equal(
+            results[1].upstream.meta.version,
+            now + 1000,
+            'Correct version (version unchanged) (publish run again on unchanged thrift file)'
+        );
+        assert.equal(
+            results[3].upstream.files[filepath],
+            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
+            'Correct published thrift file for service A (publish run on changed thrift file)'
+        );
+        assert.equal(
+            results[3].upstream.meta.version,
+            now + 4000,
+            'Correct version (version changed) (publish run on changed thrift file)'
+        );
 
-        Object.keys(cluster.remoteRepos).forEach(testPublish);
-
-        function testPublish(key) {
-            var filepath = 'idl/github.com/org/' + key.toLowerCase() +
-                '/service.thrift';
-            assert.equal(
-                upstream.files[filepath],
-                thriftIdl(key.toUpperCase()),
-                'Correct published thrift file for service ' + key.toUpperCase()
-            );
-        }
-
+        tk.reset();
         assert.end();
+    }
+
+    function publishA(time, callback) {
+        tk.freeze(new Date(time));
+        cluster.idlPublish(path.join(cluster.remotesDir, 'A'), callback);
     }
 });
 
 TestCluster.test('run `idl update`', {
+    fetchRemotes: false
 }, function t(cluster, assert) {
-    var thriftIdlContent = '' +
-        'service B {\n' +
-        '    i32 echo(1:i32 value)\n' +
-        '    i64 echo64(1:i64 value)\n' +
-        '}\n';
+
+    var now = Date.now();
 
     series([
-        cluster.idlGet.bind(cluster, 'install github.com/org/d'),
-        cluster.idlGet.bind(cluster, 'install github.com/org/b')
-    ], onAdded);
+        publishRemote(cluster, 'A', now + 1000, false),
+        publishRemote(cluster, 'B', now + 2000, false),
+        installRemote(cluster, 'github.com/org/a', now + 3000, true),
+        installRemote(cluster, 'github.com/org/b', now + 4000, true),
+        updateRemote(cluster, 'A', now + 5000, true),
+        publishRemote(cluster, 'A', now + 6000, false),
+        updateRemote(cluster, 'B', now + 7000, true),
+        publishRemote(cluster, 'B', now + 8000, false),
+        updateLocal(cluster, now + 9000, true)
+    ], onResults);
 
-    function onAdded(err) {
+    function onResults(err, data) {
         if (err) {
             assert.ifError(err);
         }
 
-        cluster.updateRemote('B', {
-            idl: {
-                'github.com': {
-                    'org': {
-                        'b': {
-                            'service.thrift': thriftIdlContent
-                        }
-                    }
-                }
-            }
-        }, onUpdated);
-    }
-
-    function onUpdated(err) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        cluster.timers.advance(30 * 1000 + 5);
-        cluster.idlDaemon.once('fetchedRemotes', onRemotes);
-    }
-
-    function onRemotes() {
-        cluster.idlGet('update', onUpdate);
-    }
-
-    function onUpdate(err) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        parallel({
-            upstream: cluster.inspectUpstream.bind(cluster),
-            local: cluster.inspectLocalApp.bind(cluster)
-        }, onInspect);
-    }
-
-    function onInspect(err, data) {
-        if (err) {
-            assert.ifError(err);
-        }
-
-        var local = data.local;
-        var upstream = data.upstream;
-
-        var localMeta = JSON.parse(local.idl['meta.json']);
-
+        // Only A published
         assert.equal(
-            localMeta.time,
-            upstream.meta.remotes['github.com/org/b'].time
-        );
-        assert.equal(
-            localMeta.version,
-            new Date(upstream.meta.remotes['github.com/org/b'].time).getTime()
-        );
-
-        assert.deepEqual(
-            localMeta.remotes['github.com/org/b'],
-            upstream.meta.remotes['github.com/org/b']
-        );
-        assert.deepEqual(
-            localMeta.remotes['github.com/org/d'],
-            upstream.meta.remotes['github.com/org/d']
+            data[0].upstream.files['idl/github.com/org/a/service.thrift'],
+            thriftIdl('A'),
+            'Correct thrift A file'
         );
 
         assert.equal(
-            local.idl['github.com'].org.b['service.thrift'],
-            upstream.files['idl/github.com/org/b/service.thrift']
+            data[0].upstream.meta.version,
+            now + 1000,
+            'Correct version'
         );
+
+        // A and B published
         assert.equal(
-            local.idl['github.com'].org.d['service.thrift'],
-            upstream.files['idl/github.com/org/d/service.thrift']
+            data[1].upstream.files['idl/github.com/org/a/service.thrift'],
+            thriftIdl('A'),
+            'Correct thrift A file'
         );
 
         assert.equal(
-            local.idl['github.com'].org.b['service.thrift'],
-            thriftIdlContent,
-            'Updated IDL has correct newer IDL content'
+            data[1].upstream.files['idl/github.com/org/b/service.thrift'],
+            thriftIdl('B'),
+            'Correct thrift B file'
         );
 
+        assert.equal(
+            data[1].upstream.meta.version,
+            now + 2000,
+            'Correct version'
+        );
+
+        // Install A locally
+        assert.equal(
+            data[2].local.idl['github.com'].org.a['service.thrift'],
+            thriftIdl('A'),
+            'Correct thrift A file locally'
+        );
+
+        assert.equal(
+            data[2].local.idl['meta.json'].version,
+            now + 1000,
+            'Correct meta.json version'
+        );
+
+        assert.equal(
+            data[2].local.idl['meta.json'].remotes['github.com/org/a'].time,
+            (new Date(now + 1000)).toISOString(),
+            'Correct version of A'
+        );
+
+        // Install B locally
+        assert.equal(
+            data[3].local.idl['github.com'].org.b['service.thrift'],
+            thriftIdl('B'),
+            'Correct thrift B file locally'
+        );
+
+        assert.equal(
+            data[3].local.idl['meta.json'].version,
+            now + 2000,
+            'Correct meta.json version'
+        );
+
+        assert.equal(
+            data[3].local.idl['meta.json'].remotes['github.com/org/b'].time,
+            (new Date(now + 2000)).toISOString(),
+            'Correct version of B'
+        );
+
+        assert.equal(
+            data[3].local.idl['meta.json'].remotes['github.com/org/a'].time,
+            (new Date(now + 1000)).toISOString(),
+            'Correct version of A'
+        );
+
+        // Remote A and B updated and published. Update run.
+        assert.equal(
+            data[8].local.idl['github.com'].org.a['service.thrift'],
+            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
+            'Correct thrift A file locally'
+        );
+
+        assert.equal(
+            data[8].local.idl['github.com'].org.b['service.thrift'],
+            template(updatedThriftIdlTemplate, { remoteName: 'B' }),
+            'Correct thrift B file locally'
+        );
+
+        assert.equal(
+            data[8].local.idl['meta.json'].version,
+            now + 8000,
+            'Correct meta.json version'
+        );
+
+        assert.equal(
+            data[8].local.idl['meta.json'].remotes['github.com/org/b'].time,
+            (new Date(now + 8000)).toISOString(),
+            'Correct version of B'
+        );
+
+        assert.equal(
+            data[8].local.idl['meta.json'].remotes['github.com/org/a'].time,
+            (new Date(now + 6000)).toISOString(),
+            'Correct version of A'
+        );
+
+        tk.reset();
         assert.end();
     }
 });
+
+function installRemote(cluster, remoteId, time, inspectLocal) {
+    return function install(callback) {
+        tk.freeze(new Date(time));
+        cluster.idlInstall(
+            remoteId,
+            inspectBoth(cluster, inspectLocal, callback)
+        );
+    };
+}
+
+function publishRemote(cluster, remoteName, time, inspectLocal) {
+    return function publish(callback) {
+        tk.freeze(new Date(time));
+        cluster.idlPublish(
+            path.join(cluster.remotesDir, remoteName),
+            inspectBoth(cluster, inspectLocal, callback)
+        );
+    }
+}
+
+function updateRemote(cluster, remoteName, time, inspectLocal) {
+    var fixtures = {
+        idl: {
+            'github.com': {
+                'org': {}
+            }
+        }
+    };
+
+    fixtures.idl['github.com'].org[remoteName.toLowerCase()] = {
+        'service.thrift': template(updatedThriftIdlTemplate, {
+            remoteName: remoteName
+        })
+    };
+
+    return function update(callback) {
+        tk.freeze(new Date(time));
+        cluster.updateRemote(
+            remoteName,
+            fixtures,
+            inspectBoth(cluster, inspectLocal, callback)
+        );
+    };
+}
+
+function updateLocal(cluster, time, inspectLocal) {
+    return function update(callback) {
+        tk.freeze(new Date(time));
+        cluster.idlUpdate(inspectBoth(cluster, inspectLocal, callback));
+    }
+}
+
+function inspectBoth(cluster, inspectLocal, callback) {
+    return function inspect() {
+        var tasks = {
+            upstream: cluster.inspectUpstream.bind(cluster)
+        };
+        if (inspectLocal) {
+            tasks.local = cluster.inspectLocalApp.bind(cluster)
+        };
+        parallel(tasks, onResults);
+    };
+
+    function onResults(err, results) {
+        if (err) {
+            return callback(err);
+        }
+        if (results &&
+            results.local &&
+            results.local.idl &&
+            results.local.idl['meta.json']) {
+            results.local.idl['meta.json'] = JSON.parse(
+                results.local.idl['meta.json']
+            );
+        }
+
+        callback(null, results);
+    }
+}
