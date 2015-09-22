@@ -23,6 +23,7 @@
 var fs = require('fs');
 var path = require('path');
 var mkdirp = require('mkdirp');
+var series = require('run-series');
 
 var gitexec = require('./git-process.js').exec;
 
@@ -102,37 +103,38 @@ function _initialLoad(remote, callback) {
 RemoteCache.prototype._pullAndUpdate =
 function _pullAndUpdate(remote, callback) {
     var self = this;
+
     var cwd = path.join(self.cacheLocation, remote.folderName);
 
-    // TODO: do an efficient fetch
-    // var command = 'git fetch ' +
-    //     '--depth 1 ' +
-    //     'origin ' +
-    //     remote.branch;
-    var command = 'git fetch --all';
-    gitexec(command, {
-        cwd: cwd,
-        logger: self.logger,
-        ignoreStderr: true
-    }, onUpdated);
+    series([
+        // TODO: do an efficient fetch
+        // 'git fetch --depth 1 origin ' + remote.branch;
+        gitCommandThunk('git fetch --all', true),
+        gitCommandThunk('git reset --hard origin/' + remote.branch, true),
+        gitCommandThunk('git clean -fd', true)
+    ], callback);
 
-    function onUpdated(err, stdout, stderr) {
-        if (err) {
-            self.logger.error('git fetch remote failed', {
-                err: err,
-                stderr: stderr,
+    function gitCommandThunk(command, ignoreStderr) {
+        return function git(callback) {
+            gitexec(command, {
                 cwd: cwd,
-                remote: remote
-            });
-            return callback(err);
-        }
+                logger: self.logger,
+                ignoreStderr: ignoreStderr
+            }, onGitDone);
+        };
 
-        var command2 = 'git reset ' +
-            '--hard ' +
-            'origin/' + remote.branch;
-        gitexec(command2, {
-            cwd: cwd,
-            logger: self.logger
-        }, callback);
+        function onGitDone(err, stdout, stderr) {
+            if (err) {
+                self.logger.error('git command failed', {
+                    command: command,
+                    err: err,
+                    stderr: stderr,
+                    cwd: cwd,
+                    remote: remote
+                });
+                return callback(err);
+            }
+            callback();
+        }
     }
 };

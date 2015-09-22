@@ -39,6 +39,9 @@ var rcUtils = require('rc/lib/utils');
 var camelCaseKeys = require('camelcase-keys');
 var traverse = require('traverse');
 var template = require('string-template');
+var deepEqual = require('deep-equal');
+var globalTimers = require('timers');
+var series = require('run-series');
 
 var GitCommands = require('../git-commands');
 
@@ -123,6 +126,8 @@ function IDL(opts) {
     self.repoCacheLocation = path.join(
         self.cacheDir, self.repoHash
     );
+
+    self.timers = opts.timers || globalTimers;
 
     self.metaFilename = 'meta.json';
     self.idlFolder = 'idl';
@@ -387,6 +392,7 @@ function publish(cb) {
     var destination;
     var source;
     var service;
+    var currentShasums;
     var newShasums;
 
     self.getServiceName(self.cwd, onServiceName);
@@ -403,33 +409,61 @@ function publish(cb) {
             self.idlFolder,
             service
         );
-        source = path.join(self.cwd, self.idlFolder, service);
-        cpr(source, destination, {
-            deleteFirst: true,
-            overwrite: true,
-            confirm: true,
-            filter: common.fileFilter
-        }, onCopied);
+        source = path.join(
+            self.cwd,
+            self.idlFolder,
+            service
+        );
+
+        shasumFiles(source, onSourceShasums);
+
+
     }
 
-    function onCopied(err) {
+    function onSourceShasums(err, shasums) {
         if (err) {
             return cb(err);
         }
-
-        shasumFiles(source, onShasums);
-    }
-
-    function onShasums(err, shasums) {
-        if (err) {
-            return cb(err);
-        }
-
         newShasums = shasums;
 
+        fs.exists(destination, onExists);
+
+        function onExists(exists) {
+            if (exists) {
+                shasumFiles(destination, onDestinationShasums);
+            } else {
+                onDestinationShasums(null, {});
+            }
+        }
+
+    }
+
+    function onDestinationShasums(err, shasums) {
+        if (err) {
+            return cb(err);
+        }
+        currentShasums = shasums;
+
+        if (deepEqual(currentShasums, newShasums)) {
+            return cb(null);
+        } else {
+            cpr(source, destination, {
+                deleteFirst: true,
+                overwrite: true,
+                confirm: true,
+                filter: common.fileFilter
+            }, onCopied);
+        }
+    }
+
+    function onCopied(err, shasums) {
+        if (err) {
+            return cb(err);
+        }
+
         self.meta.updateRecord(service, {
-            time: Date.now(),
-            shasums: shasums
+            time: self.timers.now(),
+            shasums: newShasums
         }, onRegistryMetaUpdated);
     }
 
@@ -459,8 +493,15 @@ function publish(cb) {
 function update(cb) {
     var self = this;
 
-    var metaFile = path.join(self.cwd, self.idlFolder, self.metaFilename);
-    readJSON(metaFile, onMeta);
+    var clientMetaFile = MetaFile({
+        fileName: path.join(
+            self.cwd,
+            self.idlFolder,
+            self.metaFilename
+        )
+    });
+
+    clientMetaFile.readFile(onMeta);
 
     function onMeta(err, meta) {
         if (err) {
@@ -468,18 +509,10 @@ function update(cb) {
             return cb(null);
         }
 
-        var remotes = Object.keys(meta.remotes);
-        parallel(remotes.map(function buildThunk(remote) {
+        var remotes = Object.keys(clientMetaFile.toJSON().remotes);
+        series(remotes.map(function buildThunk(remote) {
             return self.install.bind(self, remote);
-        }), onFini);
-    }
-
-    function onFini(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        cb(null);
+        }), cb);
     }
 }
 
