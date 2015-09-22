@@ -38,6 +38,7 @@ var rc = require('rc');
 var rcUtils = require('rc/lib/utils');
 var camelCaseKeys = require('camelcase-keys');
 var traverse = require('traverse');
+var template = require('string-template');
 
 var GitCommands = require('../git-commands');
 
@@ -281,7 +282,12 @@ function install(service, cb) {
         var existsInRegistry = !!self.meta.toJSON().remotes[service];
 
         if (!existsInRegistry) {
-            cb(new Error('That service is not in the registry'));
+            cb(new Error(
+                template(
+                    'The service {service} is not published in the registry', {
+                    service: service
+                })
+            ));
         }
 
         if (alreadyInstalled) {
