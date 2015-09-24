@@ -142,7 +142,8 @@ TestCluster.test('run `idl publish`', {
         assert.equal(
             results[0].upstream.files[filepath],
             thriftIdl('A'),
-            'Correct published thrift file for service A (published for the first time)'
+            'Correct published thrift file for service A (published ' +
+                'for the first time)'
         );
         assert.equal(
             results[0].upstream.meta.version,
@@ -152,31 +153,30 @@ TestCluster.test('run `idl publish`', {
         assert.equal(
             results[1].upstream.files[filepath],
             thriftIdl('A'),
-            'Correct published thrift file for service A (publish run again on unchanged thrift file)'
+            'Correct published thrift file for service A (publish run ' +
+                'again on unchanged thrift file)'
         );
         assert.equal(
             results[1].upstream.meta.version,
             now + 1000,
-            'Correct version (version unchanged) (publish run again on unchanged thrift file)'
+            'Correct version (version unchanged) (publish run again ' +
+                'on unchanged thrift file)'
         );
         assert.equal(
             results[3].upstream.files[filepath],
-            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
-            'Correct published thrift file for service A (publish run on changed thrift file)'
+            template(updatedThriftIdlTemplate, {remoteName: 'A'}),
+            'Correct published thrift file for service A (publish run ' +
+                'on changed thrift file)'
         );
         assert.equal(
             results[3].upstream.meta.version,
             now + 4000,
-            'Correct version (version changed) (publish run on changed thrift file)'
+            'Correct version (version changed) (publish run on changed ' +
+                'thrift file)'
         );
 
         tk.reset();
         assert.end();
-    }
-
-    function publishA(time, callback) {
-        tk.freeze(new Date(time));
-        cluster.idlPublish(path.join(cluster.remotesDir, 'A'), callback);
     }
 });
 
@@ -282,13 +282,13 @@ TestCluster.test('run `idl update`', {
         // Remote A and B updated and published. Update run.
         assert.equal(
             data[8].local.idl['github.com'].org.a['service.thrift'],
-            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
+            template(updatedThriftIdlTemplate, {remoteName: 'A'}),
             'Correct thrift A file locally'
         );
 
         assert.equal(
             data[8].local.idl['github.com'].org.b['service.thrift'],
-            template(updatedThriftIdlTemplate, { remoteName: 'B' }),
+            template(updatedThriftIdlTemplate, {remoteName: 'B'}),
             'Correct thrift B file locally'
         );
 
@@ -332,7 +332,7 @@ function publishRemote(cluster, remoteName, time, inspectLocal) {
             path.join(cluster.remotesDir, remoteName),
             inspectBoth(cluster, inspectLocal, callback)
         );
-    }
+    };
 }
 
 function updateRemote(cluster, remoteName, time, inspectLocal) {
@@ -364,7 +364,7 @@ function updateLocal(cluster, time, inspectLocal) {
     return function update(callback) {
         tk.freeze(new Date(time));
         cluster.idlUpdate(inspectBoth(cluster, inspectLocal, callback));
-    }
+    };
 }
 
 function inspectBoth(cluster, inspectLocal, callback) {
@@ -373,8 +373,8 @@ function inspectBoth(cluster, inspectLocal, callback) {
             upstream: cluster.inspectUpstream.bind(cluster)
         };
         if (inspectLocal) {
-            tasks.local = cluster.inspectLocalApp.bind(cluster)
-        };
+            tasks.local = cluster.inspectLocalApp.bind(cluster);
+        }
         parallel(tasks, onResults);
     };
 

@@ -31,22 +31,19 @@ var mkdirp = require('mkdirp');
 var DebugLogtron = require('debug-logtron');
 var extend = require('xtend');
 var textTable = require('text-table');
-var readJSON = require('read-json');
 var parallel = require('run-parallel');
 var cpr = require('cpr');
 var rc = require('rc');
 var rcUtils = require('rc/lib/utils');
 var camelCaseKeys = require('camelcase-keys');
 var traverse = require('traverse');
-var template = require('string-template');
 var deepEqual = require('deep-equal');
 var globalTimers = require('timers');
 var series = require('run-series');
-
+var TypedError = require('error/typed');
 var GitCommands = require('../git-commands');
 
-var gitexec = require('../git-process.js').exec;
-// var gitspawn = require('../git-process.js').spawn;
+var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
 var MetaFile = require('../meta-file.js');
 var sha1 = require('../hasher').sha1;
@@ -58,6 +55,31 @@ var envPrefixes = [
     'IDL'
 ];
 
+var UnknownServiceError = TypedError({
+    type: 'unknown-service',
+    message: 'The service {service} is not published in the registry',
+    service: null
+});
+
+var minimistOpts = {
+    string: ['repository', 'cwd', 'cacheDir'],
+    boolean: ['silent', 'verbose', 'trace', 'colors'],
+    alias: {
+        h: 'help',
+        s: 'silent',
+        v: 'version',
+        registry: 'repository'
+    },
+    default: {
+        silent: false,
+        verbose: false,
+        trace: false,
+        colors: true,
+        debugGit: false,
+        gitTimeout: 5000
+    }
+};
+
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;
 
@@ -65,13 +87,19 @@ var HOME = process.env.HOME;
 module.exports = IDL;
 
 function main() {
-    var argv = parseArgs(process.argv.slice(2));
+    var argv = parseArgs(process.argv.slice(2), minimistOpts);
 
     var conf = extend(
         rc('idl', {}, argv),
         env(),
         argv
     );
+
+    conf.logOpts = {};
+    conf.logOpts.enabled = !conf.silent;
+    conf.logOpts.verbose = conf.verbose;
+    conf.logOpts.trace = conf.trace;
+    conf.logOpts.colors = conf.colors;
 
     IDL(conf).processArgs(function onFini(err, text) {
         if (err) {
@@ -114,13 +142,13 @@ function IDL(opts) {
     self.remainder = opts._;
     self.command = self.remainder[0];
     self.repository = opts.repository;
-    self.helpFlag = opts.h || opts.help;
+    self.helpFlag = opts.help;
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
     self.cwd = opts.cwd || process.cwd();
 
-    self.logger = opts.logger || DebugLogtron('idl');
+    self.logger = opts.logger || DebugLogtron('idl', opts.logOpts || {});
 
     self.repoHash = sha1(self.repository);
     self.repoCacheLocation = path.join(
@@ -135,6 +163,13 @@ function IDL(opts) {
     self.meta = null;
 
     self.getServiceName = ServiceName(self.logger);
+
+    self.git = Git({
+        logger: self.logger,
+        debugGit: opts.debugGit,
+        gitTimeout: opts.gitTimeout,
+        helpUrl: opts.helpUrl
+    });
 }
 
 IDL.prototype.help = help;
@@ -155,7 +190,7 @@ IDL.exec = function exec(string, options, cb) {
         options = {};
     }
 
-    var opts = extend(options, parseArgs(string.split(' ')));
+    var opts = extend(options, parseArgs(string.split(' '), minimistOpts));
     var idl = IDL(opts);
 
     idl.processArgs(cb);
@@ -287,12 +322,9 @@ function install(service, cb) {
         var existsInRegistry = !!self.meta.toJSON().remotes[service];
 
         if (!existsInRegistry) {
-            cb(new Error(
-                template(
-                    'The service {service} is not published in the registry', {
-                    service: service
-                })
-            ));
+            cb(UnknownServiceError({
+                service: service
+            }));
         }
 
         if (alreadyInstalled) {
@@ -416,8 +448,6 @@ function publish(cb) {
         );
 
         shasumFiles(source, onSourceShasums);
-
-
     }
 
     function onSourceShasums(err, shasums) {
@@ -435,7 +465,6 @@ function publish(cb) {
                 onDestinationShasums(null, {});
             }
         }
-
     }
 
     function onDestinationShasums(err, shasums) {
@@ -565,9 +594,8 @@ function cloneRepository(cb) {
         var command = 'git clone ' +
             self.repository + ' ' +
             self.repoCacheLocation;
-        gitexec(command, {
+        self.git(command, {
             cwd: cwd,
-            logger: self.logger,
             ignoreStderr: true
         }, cb);
     }
@@ -578,9 +606,8 @@ function pullRepository(cb) {
 
     var cwd = self.repoCacheLocation;
     var command = 'git fetch --all';
-    gitexec(command, {
+    self.git(command, {
         cwd: cwd,
-        logger: self.logger,
         ignoreStderr: true
     }, onFetch);
 
@@ -590,9 +617,8 @@ function pullRepository(cb) {
         }
 
         var command2 = 'git merge --ff-only origin/master';
-        gitexec(command2, {
-            cwd: cwd,
-            logger: self.logger
+        self.git(command2, {
+            cwd: cwd
         }, cb);
     }
 }
@@ -602,9 +628,8 @@ function checkoutRef(ref, cb) {
 
     var cwd = self.repoCacheLocation;
     var command = 'git checkout ' + ref;
-    gitexec(command, {
+    self.git(command, {
         cwd: cwd,
-        logger: self.logger,
         ignoreStderr: true
     }, cb);
 }

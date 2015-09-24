@@ -115,26 +115,12 @@ function _pullAndUpdate(remote, callback) {
     ], callback);
 
     function gitCommandThunk(command, ignoreStderr) {
-        return function git(callback) {
+        return function git(cb) {
             gitexec(command, {
                 cwd: cwd,
                 logger: self.logger,
                 ignoreStderr: ignoreStderr
-            }, onGitDone);
+            }, cb);
         };
-
-        function onGitDone(err, stdout, stderr) {
-            if (err) {
-                self.logger.error('git command failed', {
-                    command: command,
-                    err: err,
-                    stderr: stderr,
-                    cwd: cwd,
-                    remote: remote
-                });
-                return callback(err);
-            }
-            callback();
-        }
     }
 };
