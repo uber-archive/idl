@@ -21,25 +21,104 @@
 'use strict';
 /*eslint-disable no-console*/
 var assert = require('assert');
-var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var console = require('console');
 var splitargs = require('splitargs');
+var once = require('once');
+var extend = require('xtend');
+var setTimeout = require('timers').setTimeout;
+var clearTimeout = require('timers').clearTimeout;
+var process = require('process');
 
-module.exports.exec = gitexec;
+module.exports = Git;
+module.exports.exec = gitspawn;
 module.exports.spawn = gitspawn;
 
-function gitexec(command, options, callback) {
+function Git(gitOpts) {
+    gitOpts = gitOpts || {};
+
+    return function git(command, options, callback) {
+        options = extend(gitOpts, options || {});
+        gitspawn(command, options, callback);
+    };
+}
+
+function gitspawn(command, options, callback) {
     options = options || {};
     assert(options && options.logger, 'logger required');
 
-    exec(command, options, onExec);
+    callback = once(callback);
+    var commandParts = splitargs(command);
+    var handleError = errorHandler(command, options);
+    var stdout = '';
+    var stderr = '';
 
-    function onExec(err, stdout, stderr) {
+    var helpTimeout = setTimeout(
+        timeoutHelp(options.helpUrl),
+        options.gitTimeout || 5000
+    );
+
+    var git = spawn(commandParts.shift(), commandParts, options);
+
+    if (options.debugGit) {
+        options.stdio = 'inherit';
+        git.stdout.pipe(process.stderr);
+        git.stderr.pipe(process.stderr);
+        process.stdin.resume();
+        process.stdin.pipe(git.stdin);
+    } else {
+        git.stdout.on('data', function logStdout(data) {
+            stdout += data;
+        });
+
+        git.stderr.on('data', function logStderr(data) {
+            stderr += data;
+        });
+    }
+
+    git.on('error', function onError(err) {
+        handleError(err, stdout, stderr);
+        callback(err, stdout, stderr);
+    });
+
+    git.once('close', function logExitCode(code) {
+        clearTimeout(helpTimeout);
+        process.stdin.pause();
+        if (code !== 0) {
+            console.error('git exited with code ' + code);
+        }
+        callback(null, stdout, stderr);
+    });
+
+    return git;
+}
+
+function timeoutHelp(helpUrl) {
+    return function help() {
+        var helpText = [
+            '',
+            'git is taking a long time to execute',
+            'try running again with the --debugGit flag to see',
+            'the stdout and stderr from git in realtime'
+        ];
+        if (helpUrl) {
+            helpText = helpText.concat([
+                '',
+                'Additional troubleshooting help can be found at the',
+                'following url:',
+                helpUrl,
+                ''
+            ]);
+        }
+        console.error(helpText.join('\n'));
+    };
+}
+
+function errorHandler(command, options) {
+    return function handleError(err, stdout, stderr) {
         var level = err ? 'warn' :
             stderr && !options.ignoreStderr ? 'warn' :
             'debug';
-
         options.logger[level]('git output', {
             command: command,
             stdout: stdout,
@@ -47,32 +126,5 @@ function gitexec(command, options, callback) {
             exitCode: err && err.code,
             cwd: options.cwd
         });
-
-        callback(err, stdout, stderr);
-    }
-}
-
-function gitspawn(command, options, callback) {
-    options = options || {};
-    assert(options && options.logger, 'logger required');
-    var commandParts = splitargs(command);
-
-    var git = spawn(commandParts.shift(), commandParts, options);
-
-    git.stdout.on('data', function logStdout(data) {
-        console.log('stdout: ' + data);
-    });
-
-    git.stderr.on('data', function logStderr(data) {
-        console.log('stderr: ' + data);
-    });
-
-    git.once('close', function logExitCode(code) {
-        if (code !== 0) {
-            console.log('git exited with code ' + code);
-        }
-        callback();
-    });
-
-    return git;
+    };
 }
