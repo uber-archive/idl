@@ -112,6 +112,7 @@ TestCluster.prototype.bootstrap = function bootstrap(cb) {
         rimraf.bind(null, self.fixturesDir),
         mkdirp.bind(null, self.remotesDir),
         createFixtures.bind(null, self.remotesDir, self.repoFixtures),
+        createFixtures.bind(null, self.localApp, {}),
         self.gitifyRemotes.bind(self),
         self.setupUpstream.bind(self),
         self.writeConfigFile.bind(self),
@@ -316,7 +317,8 @@ TestCluster.prototype.idlGet = function idlGet(text, cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
-        logger: self.logger
+        logger: self.logger,
+        timers: self.timers
     }, cb);
 };
 
@@ -329,7 +331,8 @@ TestCluster.prototype.idlInstall = function idlInstall(moduleName, cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
-        logger: self.logger
+        logger: self.logger,
+        timers: self.timers
     }, cb);
 };
 
@@ -342,7 +345,22 @@ TestCluster.prototype.idlPublish = function idlPublish(cwd, cb) {
     text = text + ' --cwd=' + cwd;
 
     return IDL.exec(text, {
-        logger: self.logger
+        logger: self.logger,
+        timers: self.timers
+    }, cb);
+};
+
+TestCluster.prototype.idlUpdate = function idlUpdate(cb) {
+    var self = this;
+    var text = 'update';
+
+    text = text + ' --repository=' + 'file://' + self.upstreamDir;
+    text = text + ' --cacheDir=' + self.getCacheDir;
+    text = text + ' --cwd=' + self.localApp;
+
+    return IDL.exec(text, {
+        logger: self.logger,
+        timers: self.timers
     }, cb);
 };
 
