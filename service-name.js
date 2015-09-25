@@ -20,14 +20,14 @@
 
 'use strict';
 
-var gitexec = require('./git-process.js').exec;
+var exec = require('child_process').exec;
 
 module.exports = ServiceName;
 
 function ServiceName(logger) {
     return function getServiceName(servicePath, cb) {
         var command = 'git remote --verbose';
-        gitexec(command, {
+        exec(command, {
             cwd: servicePath,
             logger: logger,
             ignoreStderr: true
@@ -39,7 +39,7 @@ function ServiceName(logger) {
             }
 
             // this works for both HTTPS and SSH git remotes
-            var gitUrl = stdout
+            var gitUrl = stdout.split('\n').filter(origin)[0]
                 .split(/\s/)[1]     // get the first git url
                 .split('@')[1]      // drop everything before the username
                 .split('.git')[0]   // drop .git suffix if one
@@ -48,4 +48,8 @@ function ServiceName(logger) {
             cb(null, gitUrl);
         }
     };
+}
+
+function origin(line) {
+    return line.indexOf('origin') === 0;
 }

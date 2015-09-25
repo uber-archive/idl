@@ -52,28 +52,34 @@ function gitspawn(command, options, callback) {
     var handleError = errorHandler(command, options);
     var stdout = '';
     var stderr = '';
+    var spawnOpts = {
+        cwd: options.cwd,
+        env: process.env
+    };
 
-    var helpTimeout = setTimeout(
-        timeoutHelp(options.helpUrl),
-        options.gitTimeout || 5000
-    );
-
-    var git = spawn(commandParts.shift(), commandParts, options);
+    var helpTimeout;
 
     if (options.debugGit) {
-        options.stdio = 'inherit';
-        git.stdout.pipe(process.stderr);
-        git.stderr.pipe(process.stderr);
-        process.stdin.resume();
-        process.stdin.pipe(git.stdin);
-    } else {
-        git.stdout.on('data', function logStdout(data) {
-            stdout += data;
-        });
+        spawnOpts.stdio = 'inherit';
+    }
 
-        git.stderr.on('data', function logStderr(data) {
-            stderr += data;
-        });
+    var git = spawn(commandParts.shift(), commandParts, spawnOpts);
+
+    if (!options.debugGit) {
+        git.stdout.on('data', logStdout);
+        git.stderr.on('data', logStderr);
+        helpTimeout = setTimeout(
+            timeoutHelp(options),
+            options.gitTimeout || 5000
+        );
+    }
+
+    function logStdout(data) {
+        stdout += data;
+    }
+
+    function logStderr(data) {
+        stderr += data;
     }
 
     git.on('error', function onError(err) {
@@ -82,26 +88,31 @@ function gitspawn(command, options, callback) {
     });
 
     git.once('close', function logExitCode(code) {
-        clearTimeout(helpTimeout);
-        process.stdin.pause();
-        if (code !== 0) {
+        if (helpTimeout) {
+            clearTimeout(helpTimeout);
+        }
+        if (code !== 0 && options.debugGit) {
             console.error('git exited with code ' + code);
         }
         callback(null, stdout, stderr);
     });
 
-    return git;
-}
+    return git                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
 
-function timeoutHelp(helpUrl) {
+function timeoutHelp(options) {
     return function help() {
         var helpText = [
             '',
-            'git is taking a long time to execute',
-            'try running again with the --debugGit flag to see',
-            'the stdout and stderr from git in realtime'
+            'git is taking a long time to execute'
+
         ];
-        if (helpUrl) {
+        if (options.debugGit) {
+            helpText = helpText.concat([
+                'try running again with the --debugGit flag to see',
+                'the stdout and stderr from git in realtime'
+            ]);
+        }
+        if (options.helpUrl) {
             helpText = helpText.concat([
                 '',
                 'Additional troubleshooting help can be found at the',
