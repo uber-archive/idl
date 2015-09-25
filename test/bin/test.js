@@ -18,38 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-'use strict';
+var spawn = require('child_process').spawn;
 
-var exec = require('child_process').exec;
+process.stdin.resume();
+process.chdir(__dirname);
+var git = spawn('git', [], { stdio: 'inherit' });
 
-module.exports = ServiceName;
+git.once('close', function(code){
+    process.stdin.pause();
+})
 
-function ServiceName(logger) {
-    return function getServiceName(servicePath, cb) {
-        var command = 'git remote --verbose';
-        exec(command, {
-            cwd: servicePath,
-            logger: logger,
-            ignoreStderr: true
-        }, onVerboseRemote);
-
-        function onVerboseRemote(err, stdout, stderr) {
-            if (err) {
-                return cb(err);
-            }
-
-            // this works for both HTTPS and SSH git remotes
-            var gitUrl = stdout.split('\n').filter(origin)[0]
-                .split(/\s/)[1]     // get the first git url
-                .split('@')[1]      // drop everything before the username
-                .split('.git')[0]   // drop .git suffix if one
-                .replace(':', '/'); // convert to valid path
-
-            cb(null, gitUrl);
-        }
-    };
-}
-
-function origin(line) {
-    return line.indexOf('origin') === 0;
-}
