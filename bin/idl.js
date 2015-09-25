@@ -76,7 +76,7 @@ var minimistOpts = {
         trace: false,
         colors: true,
         debugGit: false,
-        gitTimeout: 5000
+        gitTimeout: 10000
     }
 };
 
@@ -155,7 +155,9 @@ function IDL(opts) {
         self.cacheDir, self.repoHash
     );
 
-    self.timers = opts.timers || globalTimers;
+    self.timers = opts.timers || extend(globalTimers, {
+        now: Date.now
+    });
 
     self.metaFilename = 'meta.json';
     self.idlFolder = 'idl';
@@ -168,7 +170,9 @@ function IDL(opts) {
         logger: self.logger,
         debugGit: opts.debugGit,
         gitTimeout: opts.gitTimeout,
-        helpUrl: opts.helpUrl
+        helpUrl: opts.helpUrl,
+        twoFactorPrompt: opts.twoFactorPrompt,
+        twoFactor: opts.twoFactor
     });
 }
 

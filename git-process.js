@@ -29,6 +29,7 @@ var extend = require('xtend');
 var setTimeout = require('timers').setTimeout;
 var clearTimeout = require('timers').clearTimeout;
 var process = require('process');
+var pty = require('pty.js');
 
 module.exports = Git;
 module.exports.exec = gitspawn;
@@ -57,40 +58,45 @@ function gitspawn(command, options, callback) {
         env: process.env
     };
 
-    var helpTimeout;
+    var helpTimeout = setTimeout(
+        timeoutHelp(options),
+        options.gitTimeout || 10000
+    );
+    var git;
 
     if (options.debugGit) {
         spawnOpts.stdio = 'inherit';
-    }
-
-    var git = spawn(commandParts.shift(), commandParts, spawnOpts);
-
-    if (!options.debugGit) {
+        git = spawn(commandParts.shift(), commandParts, spawnOpts);
+        git.on('error', function onError(err) {
+            handleError(err, stdout, stderr);
+            callback(err, stdout, stderr);
+        });
+    } else {
+        git = pty.spawn(commandParts.shift(), commandParts, spawnOpts);
         git.stdout.on('data', logStdout);
-        git.stderr.on('data', logStderr);
-        helpTimeout = setTimeout(
-            timeoutHelp(options),
-            options.gitTimeout || 5000
-        );
     }
 
     function logStdout(data) {
         stdout += data;
+        if (options.twoFactorPrompt) {
+            if (options.twoFactorPrompt instanceof RegExp) {
+                if (options.twoFactorPrompt.test(data.toString())) {
+                    if (options.twoFactor) {
+                        git.write(options.twoFactor);
+                    }
+                }
+            } else if (typeof options.twoFactorPrompt === 'string') {
+                if (data.toString().indexOf(options.twoFactorPrompt) !== -1) {
+                    if (options.twoFactor) {
+                        git.write(options.twoFactor);
+                    }
+                }
+            }
+        }
     }
-
-    function logStderr(data) {
-        stderr += data;
-    }
-
-    git.on('error', function onError(err) {
-        handleError(err, stdout, stderr);
-        callback(err, stdout, stderr);
-    });
 
     git.once('close', function logExitCode(code) {
-        if (helpTimeout) {
-            clearTimeout(helpTimeout);
-        }
+        clearTimeout(helpTimeout);
         if (code !== 0 && options.debugGit) {
             console.error('git exited with code ' + code);
         }
@@ -106,7 +112,7 @@ function timeoutHelp(options) {
             'git is taking a long time to execute'
 
         ];
-        if (options.debugGit) {
+        if (!options.debugGit) {
             helpText = helpText.concat([
                 'try running again with the --debugGit flag to see',
                 'the stdout and stderr from git in realtime'
@@ -117,7 +123,7 @@ function timeoutHelp(options) {
                 '',
                 'Additional troubleshooting help can be found at the',
                 'following url:',
-                helpUrl,
+                options.helpUrl,
                 ''
             ]);
         }
