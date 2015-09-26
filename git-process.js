@@ -67,7 +67,7 @@ function gitspawn(command, options, callback) {
     if (options.debugGit) {
         spawnOpts.stdio = 'inherit';
         git = spawn(commandParts.shift(), commandParts, spawnOpts);
-        git.on('error', function onError(err) {
+        git.once('error', function onError(err) {
             handleError(err, stdout, stderr);
             callback(err, stdout, stderr);
         });
@@ -81,21 +81,30 @@ function gitspawn(command, options, callback) {
         if (options.twoFactorPrompt) {
             if (options.twoFactorPrompt instanceof RegExp) {
                 if (options.twoFactorPrompt.test(data.toString())) {
-                    if (options.twoFactor) {
-                        git.write(options.twoFactor);
-                    }
+                    handleTwoFactor()
                 }
             } else if (typeof options.twoFactorPrompt === 'string') {
                 if (data.toString().indexOf(options.twoFactorPrompt) !== -1) {
-                    if (options.twoFactor) {
-                        git.write(options.twoFactor);
-                    }
+                    handleTwoFactor()
                 }
+            }
+        }
+
+        function handleTwoFactor() {
+            console.error('Two Factor Authentication detected');
+            if (options.twoFactor) {
+                git.write(options.twoFactor + '\r');
+                console.error('Please check your primary 2fa device');
+                console.error('This is typically an app on your cellphone');
+                console.error('or a SMS message.')
+            } else {
+                console.log('--twoFactor flag is not set. Exiting');
+                process.exit(1);
             }
         }
     }
 
-    git.once('close', function logExitCode(code) {
+    git.once('exit', function logExitCode(code) {
         clearTimeout(helpTimeout);
         if (code !== 0 && options.debugGit) {
             console.error('git exited with code ' + code);
