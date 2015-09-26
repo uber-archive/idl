@@ -66,7 +66,7 @@ The `idl` CLI tool has the following sub-commands:
     recent versions. Note: You cannot pick and choose which services to
     update. This is intentional.
  - `idl publish` - Publish the Thrift IDL file for your service
-    to the thrift registry repository. This command should set up to be
+    to the idl registry repository. This command should set up to be
     automatically executed when a change to the service IDL lands on
     `master` or when that change on `master` is deployed to production.
 
@@ -91,7 +91,7 @@ Example:
 This command will fetch a particular service and "install" it in your
 project in a standard location.
 
-Once you fetch your first service we also write the `./thrift/meta.json`
+Once you fetch your first service we also write the `./idl/meta.json`
 meta file that contains the version of the registry as well as the time
 it was last changed.
 
@@ -101,7 +101,7 @@ services that have been installed. For example, if you installed service
 first update service foo to the most current version before installing
 `bar`.
 
-This command will also update the ./thrift/meta.json file in your
+This command will also update the ./idl/meta.json file in your
 project.
 
 Example:
@@ -119,7 +119,7 @@ Since the thrift definitions define the interfaces of the services
 in production, there is only one version for all files. When you
 update anything, you update everything to the current version.
 
-This command will also update the ./thrift/meta.json file in your
+This command will also update the ./idl/meta.json file in your
 project.
 
 Example.
@@ -130,7 +130,7 @@ Example.
 #### `idl publish
 
 This command will publish the Thrift IDL file for your service to the
-thrift registry repository. This command should set up to be
+idl registry repository. This command should set up to be
 automatically executed when a change to the service IDL lands on
 `master` or when that change on `master` is deployed to production.
 
@@ -169,22 +169,22 @@ variables and from `.rc` files. It will probe the following locations:
 Given your application name (`appname`), rc will look in all the obvious places for configuration.
 
   * command line arguments (parsed by [substack/minimist][substack/minimist])
-  * environment variables prefixed with `THRIFT_STORE_`
-    * or use "\_\_" to indicate nested properties <br/> _(e.g. `THRIFT_STORE_REGISTRY` => `github.com/some-org/some repo`)_
+  * environment variables prefixed with `IDL_`
+    * or use "\_\_" to indicate nested properties <br/> _(e.g. `IDL_REGISTRY` => `github.com/some-org/some repo`)_
     * keys will automatically be camelCased to match the possible options
     above.
   * if you passed an option `--config file` then from that file
-  * a local `.thriftstorerc` or the first found looking in `./ ../ ../../ ../../../` etc.
-  * `$HOME/.thriftstorerc`
-  * `$HOME/.thriftstore/config`
-  * `$HOME/.config/thriftstore
-  * `$HOME/.config/thriftstore/config`
-  * `/etc/thriftstorerc`
-  * `/etc/thriftstore/config`
+  * a local `.idlrc` or the first found looking in `./ ../ ../../ ../../../` etc.
+  * `$HOME/.idlrc`
+  * `$HOME/.idl/config`
+  * `$HOME/.config/idl
+  * `$HOME/.config/idl/config`
+  * `/etc/idlrc`
+  * `/etc/idl/config`
 
-### The `./thrift/` folder
+### The `./idl/` folder
 
-All services and clients will have a `./thrift/` folder at the root of
+All services and clients will have a `./idl/` folder at the root of
 the repo. All thrift IDL files are contained in this folder.
 
 Service authors need to understand how this folder is organized and
@@ -193,7 +193,7 @@ question. Client authors should never have to edit/modify files in this
 folder and should only use the files contained therein as references
 for the interfaces they are consuming.
 
-The thrift folder is organized so that every thrift IDL file (for the
+The idl folder is organized so that every thrift IDL file (for the
 service being authored or the services being consumed) is located at a
 sub-path that mirrors the git remote `origin` URL of a service.
 
@@ -210,11 +210,11 @@ or
     origin  ssh://git@github.com/uber/foo-service.git (fetch)
     origin  ssh://git@github.com/uber/foo-service.git (push)
 
-The thrift folder for your service mirrors these two addresses.
-Assuming the output above, the thrift store path for the service
-being authoring will be `./thrift/github.com/uber/foo-service/`.
+The idl folder for your service mirrors these two addresses.
+Assuming the output above, the idl path for the service
+being authoring will be `./idl/github.com/uber/foo-service/`.
 This folder will contain the thrift IDL files that will be
-published to your thrift registry repo when `idl publish`
+published to your idl registry repo when `idl publish`
 is executed. The IDL files in this particular sub-folder are to be
 manually managed by service authors.
 
@@ -238,7 +238,7 @@ folder and file structure:
 
     $ tree
     .
-    └── thrift
+    └── idl
         ├── github.com
         │   ├── foo
         │   │   ├── bar
@@ -253,7 +253,7 @@ folder and file structure:
     7 directories, 4 files
     $
 
-... and the `./thrift/github.com/foo/bar/service.thrift` would
+... and the `./idl/github.com/foo/bar/bar.thrift` would
 contain the following includes in its header section:
 
     include "../baz/baz.thrift"
@@ -273,25 +273,23 @@ their thrift files in the `upstream` repository. You can use
 The `idl-daemon` is a command that should be run with
 cron.
 
-To set up the thrift interface repository you can run the
+To set up the idl repository you can run the
 `idl-daemon`. Run `idl-daemon --config-file={path}`
-and it will populate the thrift remote repository.
+and it will populate the idl remote repository.
 
 The config file contains the following fields
 
 ```json
 {
-    "upstream": "git+ssh://git@github.com/my-company/thrift-files",
+    "upstream": "git+ssh://git@github.com/my-company/idl-registry",
     "repositoryFolder": "/var/lib/my-company/idl/repo",
     "cacheLocation": "/var/lib/my-company/idl/cache",
     "remotes": [{
         "repository": "git+ssh://git@github.com/my-company/user-service",
-        "branch": "master",
-        "thriftFile": "thrift/service.thrift"
+        "branch": "master"
     }, {
         "repository": "git+ssh://git@github.com/my-company/product-service",
-        "branch": "master",
-        "thriftFile": "thrift/service.thrift"
+        "branch": "master"
     }]
 }
 ```
@@ -329,13 +327,13 @@ This project is not done yet:
 
 ## MIT Licensed
 
-  [build-png]: https://secure.travis-ci.org/uber/thrift-store.png
-  [build]: https://travis-ci.org/uber/thrift-store
-  [cover-png]: https://coveralls.io/repos/uber/thrift-store/badge.png
-  [cover]: https://coveralls.io/r/uber/thrift-store
-  [dep-png]: https://david-dm.org/uber/thrift-store.png
-  [dep]: https://david-dm.org/uber/thrift-store
-  [npm-png]: https://nodei.co/npm/thrift-store.png?stars&downloads
-  [npm]: https://nodei.co/npm/thrift-store
+  [build-png]: https://secure.travis-ci.org/uber/idl.png
+  [build]: https://travis-ci.org/uber/idl
+  [cover-png]: https://coveralls.io/repos/uber/idl/badge.png
+  [cover]: https://coveralls.io/r/uber/idl
+  [dep-png]: https://david-dm.org/uber/idl.png
+  [dep]: https://david-dm.org/uber/idl
+  [npm-png]: https://nodei.co/npm/idl.png?stars&downloads
+  [npm]: https://nodei.co/npm/idl
   [dominictarr/rc]: https://github.com/dominictarr/rc
   [substack/minimist]: https://github.com/substack/minimist
