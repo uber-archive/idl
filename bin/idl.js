@@ -109,7 +109,7 @@ function main() {
             console.error('ERR: ' + err);
             process.exit(1);
         }
-        console.log(err, text);
+
         if (text) {
             console.log(text.toString());
         }
@@ -232,7 +232,7 @@ function version(cb) {
 function processArgs(cb) {
     var self = this;
 
-    if (self.helpFlag || self.command === 'help') {
+    if (self.helpFlag || self.command === 'help' || !self.command) {
         return self.help(cb);
     }
 
