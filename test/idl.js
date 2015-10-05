@@ -88,20 +88,8 @@ TestCluster.test('run `idl list`', {
 
 TestCluster.test('run `idl show`', {
 }, function t(cluster, assert) {
-    var oldStdout = process.stdout.write;
-    var stdout = '';
 
-    function fakeWriter(str) {
-        stdout += str;
-    }
-
-    process.stdout.write = (function wrapWrite(write) {
-        return function wrappedWrite(string, encoding, fd) {
-            var args = Array.prototype.slice.apply(arguments);
-            write.apply(process.stdout, args);
-            fakeWriter.call(fakeWriter, string);
-        };
-    }(process.stdout.write));
+    var stdout = mockStdout();
 
     cluster.idlGet('show github.com/org/a', function onShow(err) {
         if (err) {
@@ -111,8 +99,20 @@ TestCluster.test('run `idl show`', {
             'github.com/org/a/service.thrift',
             thriftIdl('A')
         ].join('\n') + '\n';
+        assert.equal(stdout.get(), expected);
+        stdout.restore();
+        assert.end();
+    });
+});
+
+TestCluster.test('run `idl version`', {
+}, function t(cluster, assert) {
+    cluster.idlGet('version', function onShow(err, stdout) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var expected = require('../package.json').version;
         assert.equal(stdout, expected);
-        process.stdout.write = oldStdout;
         assert.end();
     });
 });
@@ -425,4 +425,34 @@ function inspectBoth(cluster, inspectLocal, callback) {
 
         callback(null, results);
     }
+}
+
+function mockStdout() {
+    var oldStdout = process.stdout.write;
+    var stdout = '';
+
+    function fakeWriter(str) {
+        stdout += str;
+    }
+
+    process.stdout.write = (function wrapWrite(write) {
+        return function wrappedWrite(string, encoding, fd) {
+            var args = Array.prototype.slice.apply(arguments);
+            write.apply(process.stdout, args);
+            fakeWriter.call(fakeWriter, string);
+        };
+    }(process.stdout.write));
+
+    function restoreStdout() {
+        process.stdout.write = oldStdout;
+    }
+
+    function getStdout() {
+        return stdout;
+    }
+
+    return {
+        get: getStdout,
+        restore: restoreStdout
+    };
 }
