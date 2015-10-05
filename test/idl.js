@@ -438,7 +438,7 @@ function mockStdout() {
     process.stdout.write = (function wrapWrite(write) {
         return function wrappedWrite(string, encoding, fd) {
             var args = Array.prototype.slice.apply(arguments);
-            write.apply(process.stdout, args);
+            // write.apply(process.stdout, args);
             fakeWriter.call(fakeWriter, string);
         };
     }(process.stdout.write));
