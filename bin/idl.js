@@ -180,7 +180,7 @@ IDL.prototype.help = help;
 IDL.prototype.processArgs = processArgs;
 
 IDL.prototype.list = list;
-IDL.prototype.install = install;
+IDL.prototype.fetch = fetch;
 IDL.prototype.publish = publish;
 IDL.prototype.update = update;
 IDL.prototype.fetchRepository = fetchRepository;
@@ -208,7 +208,7 @@ function help() {
         '',
         'Where <command> is one of:',
         '  - list',
-        '  - install <name>',
+        '  - fetch <name>',
         '  - publish',
         '  - update'
     ].join('\n');
@@ -234,10 +234,10 @@ function processArgs(cb) {
                 self.list(cb);
                 break;
 
-            case 'install':
+            case 'fetch':
                 var service = self.remainder[1];
 
-                self.install(service, cb);
+                self.fetch(service, cb);
                 break;
 
             case 'publish':
@@ -262,7 +262,7 @@ function list(cb) {
     return cb(null, ListText(self.meta));
 }
 
-function installFromMeta(cb) {
+function fetchFromMeta(cb) {
     var self = this;
 
     var localMeta = MetaFile({
@@ -290,21 +290,21 @@ function installFromMeta(cb) {
         }
 
         var services = Object.keys(localMeta.toJSON().remotes)
-            .map(makeInstallServiceThunk);
+            .map(makeFetchServiceThunk);
 
         parallel(services, cb);
     }
 
-    function makeInstallServiceThunk(service) {
-        return install.bind(self, service);
+    function makeFetchServiceThunk(service) {
+        return fetch.bind(self, service);
     }
 }
 
-function install(service, cb) {
+function fetch(service, cb) {
     var self = this;
 
     if (!service) {
-        return installFromMeta.call(self, cb);
+        return fetchFromMeta.call(self, cb);
     }
 
     var clientMetaFile = MetaFile({
@@ -322,7 +322,7 @@ function install(service, cb) {
             return cb(err);
         }
 
-        var alreadyInstalled = !!clientMetaFile.toJSON().remotes[service];
+        var alreadyFetched = !!clientMetaFile.toJSON().remotes[service];
         var existsInRegistry = !!self.meta.toJSON().remotes[service];
 
         if (!existsInRegistry) {
@@ -331,7 +331,7 @@ function install(service, cb) {
             }));
         }
 
-        if (alreadyInstalled) {
+        if (alreadyFetched) {
             onUpdate();
         } else {
             self.update(onUpdate);
@@ -409,16 +409,16 @@ function install(service, cb) {
 
     //     return cb();
 
-    //     var dependenciesInstallers = Object.keys(dependencies)
-    //         .map(makeInstaller);
+    //     var dependenciesFetchers = Object.keys(dependencies)
+    //         .map(makeFetcher);
 
-    //     function makeInstaller(dependency) {
-    //         return function installDependencyThunk(callback) {
-    //             install(dependency, callback);
+    //     function makeFetcher(dependency) {
+    //         return function fetchDependencyThunk(callback) {
+    //             fetch(dependency, callback);
     //         };
     //     }
 
-    //     series(dependenciesInstallers, cb);
+    //     series(dependenciesFetchers, cb);
     // }
 
 }
@@ -544,7 +544,7 @@ function update(cb) {
 
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
         series(remotes.map(function buildThunk(remote) {
-            return self.install.bind(self, remote);
+            return self.fetch.bind(self, remote);
         }), cb);
     }
 }
