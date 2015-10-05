@@ -28,7 +28,6 @@ var once = require('once');
 var extend = require('xtend');
 var setTimeout = require('timers').setTimeout;
 var clearTimeout = require('timers').clearTimeout;
-var process = require('process');
 var pty = require('pty.js');
 
 module.exports = Git;
@@ -54,8 +53,7 @@ function gitspawn(command, options, callback) {
     var stdout = '';
     var stderr = '';
     var spawnOpts = {
-        cwd: options.cwd,
-        env: process.env
+        cwd: options.cwd
     };
 
     var helpTimeout = setTimeout(
@@ -81,11 +79,11 @@ function gitspawn(command, options, callback) {
         if (options.twoFactorPrompt) {
             if (options.twoFactorPrompt instanceof RegExp) {
                 if (options.twoFactorPrompt.test(data.toString())) {
-                    handleTwoFactor()
+                    handleTwoFactor();
                 }
             } else if (typeof options.twoFactorPrompt === 'string') {
                 if (data.toString().indexOf(options.twoFactorPrompt) !== -1) {
-                    handleTwoFactor()
+                    handleTwoFactor();
                 }
             }
         }
@@ -96,10 +94,10 @@ function gitspawn(command, options, callback) {
                 git.write(options.twoFactor + '\r');
                 console.error('Please check your primary 2fa device');
                 console.error('This is typically an app on your cellphone');
-                console.error('or a SMS message.')
+                console.error('or a SMS message.');
             } else {
-                console.log('--twoFactor flag is not set. Exiting');
-                process.exit(1);
+                var err = new Error('--twoFactor flag is not set');
+                return callback(err);
             }
         }
     }
@@ -112,14 +110,14 @@ function gitspawn(command, options, callback) {
         callback(null, stdout, stderr);
     });
 
-    return git                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+    return git;
+}
 
 function timeoutHelp(options) {
     return function help() {
         var helpText = [
             '',
             'git is taking a long time to execute'
-
         ];
         if (!options.debugGit) {
             helpText = helpText.concat([
