@@ -42,6 +42,7 @@ var globalTimers = require('timers');
 var series = require('run-series');
 var TypedError = require('error/typed');
 var GitCommands = require('../git-commands');
+var readDirFiles = require('read-dir-files').read;
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -183,6 +184,7 @@ IDL.prototype.list = list;
 IDL.prototype.fetch = fetch;
 IDL.prototype.publish = publish;
 IDL.prototype.update = update;
+IDL.prototype.show = show;
 IDL.prototype.fetchRepository = fetchRepository;
 IDL.prototype.cloneRepository = cloneRepository;
 IDL.prototype.pullRepository = pullRepository;
@@ -228,6 +230,7 @@ function processArgs(cb) {
         if (err) {
             return cb(err);
         }
+        var service;
 
         switch (self.command) {
             case 'list':
@@ -235,9 +238,13 @@ function processArgs(cb) {
                 break;
 
             case 'fetch':
-                var service = self.remainder[1];
-
+                service = self.remainder[1];
                 self.fetch(service, cb);
+                break;
+
+            case 'show':
+                service = self.remainder[1];
+                self.show(service, cb);
                 break;
 
             case 'publish':
@@ -421,6 +428,47 @@ function fetch(service, cb) {
     //     series(dependenciesFetchers, cb);
     // }
 
+}
+
+function show(service, cb) {
+    var self = this;
+
+    if (!service) {
+        return cb(new Error('service unspecified'));
+    }
+
+    var existsInRegistry = !!self.meta.toJSON().remotes[service];
+
+    if (!existsInRegistry) {
+        cb(UnknownServiceError({
+            service: service
+        }));
+    }
+
+    var source = path.join(
+        self.repoCacheLocation,
+        self.idlFolder,
+        service
+    );
+
+    readDirFiles(source, 'utf8', onReadFiles);
+
+    function onReadFiles(err, files) {
+        if (err) {
+            return cb(err);
+        }
+
+        traverse(files).forEach(printFile);
+
+        function printFile(value) {
+            var filepath = this.path.join('/');
+            if (/\.thrift$/.test(filepath)) {
+                process.stdout.write(path.join(service, filepath) + '\n');
+                process.stdout.write(value + '\n');
+            }
+        }
+        cb();
+    }
 }
 
 function publish(cb) {

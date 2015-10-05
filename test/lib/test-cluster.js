@@ -322,9 +322,9 @@ TestCluster.prototype.idlGet = function idlGet(text, cb) {
     }, cb);
 };
 
-TestCluster.prototype.idlInstall = function idlInstall(moduleName, cb) {
+TestCluster.prototype.idlFetch = function idlFetch(moduleName, cb) {
     var self = this;
-    var text = 'install ' + moduleName;
+    var text = 'fetch ' + moduleName;
 
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;
