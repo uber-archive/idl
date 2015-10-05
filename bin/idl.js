@@ -43,6 +43,7 @@ var series = require('run-series');
 var TypedError = require('error/typed');
 var GitCommands = require('../git-commands');
 var readDirFiles = require('read-dir-files').read;
+var setImmediate = require('timers').setImmediate;
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -51,6 +52,7 @@ var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 // var getDependencies = require('../get-dependencies');
 var common = require('../common');
+var pkg = require('../package.json');
 
 var envPrefixes = [
     'IDL'
@@ -107,7 +109,7 @@ function main() {
             console.error('ERR: ' + err);
             process.exit(1);
         }
-
+        console.log(err, text);
         if (text) {
             console.log(text.toString());
         }
@@ -144,6 +146,7 @@ function IDL(opts) {
     self.command = self.remainder[0];
     self.repository = opts.repository;
     self.helpFlag = opts.help;
+    self.versionFlag = opts.version;
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
@@ -178,6 +181,7 @@ function IDL(opts) {
 }
 
 IDL.prototype.help = help;
+IDL.prototype.version = version;
 IDL.prototype.processArgs = processArgs;
 
 IDL.prototype.list = list;
@@ -203,25 +207,37 @@ IDL.exec = function exec(string, options, cb) {
     return idl;
 };
 
-function help() {
+function help(cb) {
+    /*eslint-disable max-len*/
     var helpText = [
         'usage: idl --repository=<repo> [--help] [-h]',
         '                    <command> <args>',
         '',
         'Where <command> is one of:',
-        '  - list',
-        '  - fetch <name>',
-        '  - publish',
-        '  - update'
+        '  - list           list service IDLs available in the registry',
+        '  - fetch <name>   fetch IDLs for a service and place in the current project',
+        '  - show <show>    print the IDLs for a service on stdout',
+        '  - publish        manually publish IDLs for a service to the registry',
+        '  - update         update any "installed" service IDLs to the latest versions',
+        '  - version        print the current version of `idl`'
     ].join('\n');
-    console.log(helpText);
+    /*eslint-enable max-len*/
+    setImmediate(cb.bind(this, null, helpText));
+}
+
+function version(cb) {
+    setImmediate(cb.bind(this, null, pkg.version));
 }
 
 function processArgs(cb) {
     var self = this;
 
     if (self.helpFlag || self.command === 'help') {
-        return self.help();
+        return self.help(cb);
+    }
+
+    if (self.versionFlag || self.command === 'version') {
+        return self.version(cb);
     }
 
     self.fetchRepository(onRepository);
@@ -287,8 +303,8 @@ function fetchFromMeta(cb) {
             return cb(err);
         }
 
-        var version = localMeta.toJSON().version;
-        self.checkoutRef('v' + version, onCheckoutRegistryTag);
+        var idlVersion = localMeta.toJSON().version;
+        self.checkoutRef('v' + idlVersion, onCheckoutRegistryTag);
     }
 
     function onCheckoutRegistryTag(err) {
