@@ -36,6 +36,43 @@ var updatedThriftIdlTemplate = '' +
     '    i64 echo64(1:i64 value)\n' +
     '}\n';
 
+TestCluster.test('run `idl init`', {
+    fetchRemotes: false
+}, function t(cluster, assert) {
+
+    series([
+        cluster.idlGet.bind(cluster, 'init'),
+        cluster.inspectLocalApp.bind(cluster)
+    ], onResults);
+
+    function onResults(err, results) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var local = results[1];
+
+        var expected = [
+            'typedef string UUID',
+            'typedef i64 Timestamp',
+            '',
+            'service Idl {',
+            '    UUID echo(',
+            '        1: UUID uuid',
+            '    )',
+            '}',
+            ''
+        ].join('\n');
+
+        assert.equal(
+            local.idl['github.com'].uber.idl['idl.thrift'],
+            expected,
+            'Correct IDL file contents at the correct path'
+        );
+
+        assert.end();
+    }
+});
+
 TestCluster.test('run `idl list`', {
 }, function t(cluster, assert) {
     parallel({
@@ -437,7 +474,7 @@ function mockStdout() {
 
     process.stdout.write = (function wrapWrite(write) {
         return function wrappedWrite(string, encoding, fd) {
-            var args = Array.prototype.slice.apply(arguments);
+            // var args = Array.prototype.slice.apply(arguments);
             // write.apply(process.stdout, args);
             fakeWriter.call(fakeWriter, string);
         };
