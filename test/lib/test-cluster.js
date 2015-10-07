@@ -317,6 +317,7 @@ TestCluster.prototype.idlGet = function idlGet(text, cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
@@ -331,6 +332,7 @@ TestCluster.prototype.idlFetch = function idlFetch(moduleName, cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
@@ -345,6 +347,7 @@ TestCluster.prototype.idlPublish = function idlPublish(cwd, cb) {
     text = text + ' --cwd=' + cwd;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
@@ -359,6 +362,7 @@ TestCluster.prototype.idlUpdate = function idlUpdate(cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);

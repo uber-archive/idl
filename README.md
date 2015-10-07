@@ -111,7 +111,7 @@ Example:
 
 #### `idl update`
 
-This command will update all previoulsy fetched services to the most
+This command will update all previously fetched services to the most
 recent versions. Note: You cannot pick and choose which services to update. This is intentional.
 
 Since the thrift definitions define the interfaces of the services
