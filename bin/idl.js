@@ -44,6 +44,8 @@ var TypedError = require('error/typed');
 var GitCommands = require('../git-commands');
 var readDirFiles = require('read-dir-files').read;
 var setImmediate = require('timers').setImmediate;
+var spawn = require('child_process').spawn;
+var once = require('once');
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -65,21 +67,11 @@ var UnknownServiceError = TypedError({
 });
 
 var minimistOpts = {
-    string: ['repository', 'cwd', 'cacheDir'],
-    boolean: ['silent', 'verbose', 'trace', 'colors'],
     alias: {
         h: 'help',
         s: 'silent',
         v: 'version',
         registry: 'repository'
-    },
-    default: {
-        silent: false,
-        verbose: false,
-        trace: false,
-        colors: true,
-        debugGit: false,
-        gitTimeout: 10000
     }
 };
 
@@ -92,8 +84,20 @@ module.exports = IDL;
 function main() {
     var argv = parseArgs(process.argv.slice(2), minimistOpts);
 
+    var defaults = {
+        cwd: process.cwd(),
+        silent: false,
+        verbose: false,
+        trace: false,
+        colors: true,
+        debugGit: false,
+        gitTimeout: 10000,
+        preauth: 'true',
+        preauthShell: 'sh'
+    };
+
     var conf = extend(
-        rc('idl', {}, argv),
+        rc('idl', defaults, argv),
         env(),
         argv
     );
@@ -147,6 +151,10 @@ function IDL(opts) {
     self.repository = opts.repository;
     self.helpFlag = opts.help;
     self.versionFlag = opts.version;
+    self.preauthCommand = opts.preauth || 'true';
+    self.preauthShell = opts.preauthShell || 'sh';
+    self.preauthIgnore = opts.preauthIgnore || [];
+    self.helpUrl = opts.helpUrl;
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
@@ -174,7 +182,7 @@ function IDL(opts) {
         logger: self.logger,
         debugGit: opts.debugGit,
         gitTimeout: opts.gitTimeout,
-        helpUrl: opts.helpUrl,
+        helpUrl: self.helpUrl,
         twoFactorPrompt: opts.twoFactorPrompt,
         twoFactor: opts.twoFactor
     });
@@ -207,7 +215,7 @@ IDL.exec = function exec(string, options, cb) {
     return idl;
 };
 
-function help(cb) {
+function help(helpUrl, cb) {
     /*eslint-disable max-len*/
     var helpText = [
         'usage: idl --repository=<repo> [--help] [-h]',
@@ -220,7 +228,20 @@ function help(cb) {
         '  - publish        manually publish IDLs for a service to the registry',
         '  - update         update any "installed" service IDLs to the latest versions',
         '  - version        print the current version of `idl`'
-    ].join('\n');
+    ]
+
+    if (helpUrl && typeof helpUrl === 'string' && helpUrl.length > 0) {
+        helpText = helpText.concat([
+            '',
+            'Additional help specific to how your organization uses `idl`',
+            'can be found at the following url:',
+            helpUrl,
+            ''
+        ]);
+    }
+
+    helpText = helpText.join('\n');
+
     /*eslint-enable max-len*/
     setImmediate(cb.bind(this, null, helpText));
 }
@@ -233,14 +254,23 @@ function processArgs(cb) {
     var self = this;
 
     if (self.helpFlag || self.command === 'help' || !self.command) {
-        return self.help(cb);
+        return self.help(self.helpUrl, cb);
     }
 
     if (self.versionFlag || self.command === 'version') {
         return self.version(cb);
     }
 
-    self.fetchRepository(onRepository);
+    preauth(
+        self.preauthShell,
+        self.preauthCommand,
+        self.preauthIgnore,
+        fetchRepository
+    );
+
+    function fetchRepository() {
+        self.fetchRepository(onRepository);
+    }
 
     function onRepository(err) {
         if (err) {
@@ -725,6 +755,25 @@ function toString() {
         });
 
     return textTable(tuples);
+}
+
+function preauth(shell, command, ignoreList, cb) {
+    shell = shell || 'sh';
+    command = command || 'true';
+
+    if (command !== 'true' &&
+        Array.isArray(ignoreList) &&
+        ignoreList.length > 0) {
+        command += ' 2>&1 | grep -v -e "' + ignoreList.join('" -e "') + '"';
+    }
+
+    cb = once(cb);
+    var args = ['-c', command];
+    var opts = { stdio: 'inherit' };
+    var preauth = spawn(shell, args, opts);
+    preauth.on('error', cb);
+    preauth.on('exit', cb);
+    preauth.on('close', cb);
 }
 
 if (require.main === module) {
