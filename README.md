@@ -74,6 +74,18 @@ All commands follow the unix standard of being silent if successful. If
 you would like more information about what is happening, run the CLI
 with the `--verbose` flag.
 
+#### `idl init`
+
+This command will create a starter IDL file at the correct filepath in
+a new service. You should use it if you've got a new service and want
+to quickly scaffolder a simple thrift IDL file at the path expected
+by the `idl publish` command.
+
+Example:
+
+    $ idl init
+    $
+
 #### `idl list`
 
 This command will list all available services published to the registry.

@@ -46,6 +46,8 @@ var readDirFiles = require('read-dir-files').read;
 var setImmediate = require('timers').setImmediate;
 var spawn = require('child_process').spawn;
 var once = require('once');
+var pascalCase = require('pascal-case');
+var template = require('string-template');
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -192,6 +194,7 @@ IDL.prototype.help = help;
 IDL.prototype.version = version;
 IDL.prototype.processArgs = processArgs;
 
+IDL.prototype.init = init;
 IDL.prototype.list = list;
 IDL.prototype.fetch = fetch;
 IDL.prototype.publish = publish;
@@ -222,13 +225,14 @@ function help(helpUrl, cb) {
         '                    <command> <args>',
         '',
         'Where <command> is one of:',
+        '  - init           Scaffold simple IDL file at correct path for a new service project',
         '  - list           list service IDLs available in the registry',
         '  - fetch <name>   fetch IDLs for a service and place in the current project',
         '  - show <show>    print the IDLs for a service on stdout',
         '  - publish        manually publish IDLs for a service to the registry',
         '  - update         update any "installed" service IDLs to the latest versions',
         '  - version        print the current version of `idl`'
-    ]
+    ];
 
     if (helpUrl && typeof helpUrl === 'string' && helpUrl.length > 0) {
         helpText = helpText.concat([
@@ -259,6 +263,10 @@ function processArgs(cb) {
 
     if (self.versionFlag || self.command === 'version') {
         return self.version(cb);
+    }
+
+    if (self.command === 'init') {
+        return self.init(cb);
     }
 
     preauth(
@@ -306,6 +314,53 @@ function processArgs(cb) {
                 cb(new Error('unknown command ' + self.command));
                 break;
         }
+    }
+}
+
+function init(cb) {
+    var self = this;
+    var serviceName;
+    var destination;
+
+    self.getServiceName(self.cwd, onServiceName);
+
+    function onServiceName(err, fullServiceName) {
+        if (err) {
+            return cb(err);
+        }
+
+        serviceName = fullServiceName;
+
+        destination = path.join(self.cwd, 'idl', fullServiceName);
+
+        mkdirp(destination, onDestinationFolder);
+    }
+
+    function onDestinationFolder(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var name = serviceName.split('/').pop();
+        var filePath = path.join(destination, name + '.thrift');
+
+        var idlTemplate = [
+            'typedef string UUID',
+            'typedef i64 Timestamp',
+            '',
+            'service {serviceName} {',
+            '    UUID echo(',
+            '        1: UUID uuid',
+            '    )',
+            '}',
+            ''
+        ].join('\n');
+
+        var contents = template(idlTemplate, {
+            serviceName: pascalCase(name)
+        });
+
+        fs.writeFile(filePath, contents, 'utf8', cb);
     }
 }
 
@@ -769,11 +824,11 @@ function preauth(shell, command, ignoreList, cb) {
 
     cb = once(cb);
     var args = ['-c', command];
-    var opts = { stdio: 'inherit' };
-    var preauth = spawn(shell, args, opts);
-    preauth.on('error', cb);
-    preauth.on('exit', cb);
-    preauth.on('close', cb);
+    var opts = {stdio: 'inherit'};
+    var pa = spawn(shell, args, opts);
+    pa.on('error', cb);
+    pa.on('exit', cb);
+    pa.on('close', cb);
 }
 
 if (require.main === module) {
