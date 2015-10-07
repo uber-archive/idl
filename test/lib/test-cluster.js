@@ -317,20 +317,22 @@ TestCluster.prototype.idlGet = function idlGet(text, cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
 };
 
-TestCluster.prototype.idlInstall = function idlInstall(moduleName, cb) {
+TestCluster.prototype.idlFetch = function idlFetch(moduleName, cb) {
     var self = this;
-    var text = 'install ' + moduleName;
+    var text = 'fetch ' + moduleName;
 
     text = text + ' --repository=' + 'file://' + self.upstreamDir;
     text = text + ' --cacheDir=' + self.getCacheDir;
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
@@ -345,6 +347,7 @@ TestCluster.prototype.idlPublish = function idlPublish(cwd, cb) {
     text = text + ' --cwd=' + cwd;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);
@@ -359,6 +362,7 @@ TestCluster.prototype.idlUpdate = function idlUpdate(cb) {
     text = text + ' --cwd=' + self.localApp;
 
     return IDL.exec(text, {
+        preauth: 'true',
         logger: self.logger,
         timers: self.timers
     }, cb);

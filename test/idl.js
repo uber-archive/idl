@@ -25,6 +25,7 @@ var series = require('run-series');
 var path = require('path');
 var tk = require('timekeeper');
 var template = require('string-template');
+var process = require('process');
 
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
@@ -34,6 +35,43 @@ var updatedThriftIdlTemplate = '' +
     '    i32 echo(1:i32 value)\n' +
     '    i64 echo64(1:i64 value)\n' +
     '}\n';
+
+TestCluster.test('run `idl init`', {
+    fetchRemotes: false
+}, function t(cluster, assert) {
+
+    series([
+        cluster.idlGet.bind(cluster, 'init'),
+        cluster.inspectLocalApp.bind(cluster)
+    ], onResults);
+
+    function onResults(err, results) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var local = results[1];
+
+        var expected = [
+            'typedef string UUID',
+            'typedef i64 Timestamp',
+            '',
+            'service Idl {',
+            '    UUID echo(',
+            '        1: UUID uuid',
+            '    )',
+            '}',
+            ''
+        ].join('\n');
+
+        assert.equal(
+            local.idl['github.com'].uber.idl['idl.thrift'],
+            expected,
+            'Correct IDL file contents at the correct path'
+        );
+
+        assert.end();
+    }
+});
 
 TestCluster.test('run `idl list`', {
 }, function t(cluster, assert) {
@@ -85,19 +123,50 @@ TestCluster.test('run `idl list`', {
     }
 });
 
-TestCluster.test('run `idl install`', {
+TestCluster.test('run `idl show`', {
+}, function t(cluster, assert) {
+
+    var stdout = mockStdout();
+
+    cluster.idlGet('show github.com/org/a', function onShow(err) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var expected = [
+            'github.com/org/a/service.thrift',
+            thriftIdl('A')
+        ].join('\n') + '\n';
+        assert.equal(stdout.get(), expected);
+        stdout.restore();
+        assert.end();
+    });
+});
+
+TestCluster.test('run `idl version`', {
+}, function t(cluster, assert) {
+    cluster.idlGet('version', function onShow(err, stdout) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var expected = require('../package.json').version;
+        assert.equal(stdout, expected);
+        assert.end();
+    });
+});
+
+TestCluster.test('run `idl fetch`', {
 }, function t(cluster, assert) {
 
     var now = Date.now();
 
-    var install = installRemote(
+    var fetch = fetchRemote(
         cluster,
         'github.com/org/b',
         now + 1000,
         true
     );
 
-    install(onResults);
+    fetch(onResults);
 
     function onResults(err, results) {
         if (err) {
@@ -189,8 +258,8 @@ TestCluster.test('run `idl update`', {
     series([
         publishRemote(cluster, 'A', now + 1000, false),
         publishRemote(cluster, 'B', now + 2000, false),
-        installRemote(cluster, 'github.com/org/a', now + 3000, true),
-        installRemote(cluster, 'github.com/org/b', now + 4000, true),
+        fetchRemote(cluster, 'github.com/org/a', now + 3000, true),
+        fetchRemote(cluster, 'github.com/org/b', now + 4000, true),
         updateRemote(cluster, 'A', now + 5000, true),
         publishRemote(cluster, 'A', now + 6000, false),
         updateRemote(cluster, 'B', now + 7000, true),
@@ -235,7 +304,7 @@ TestCluster.test('run `idl update`', {
             'Correct version'
         );
 
-        // Install A locally
+        // Fetch A locally
         assert.equal(
             data[2].local.idl['github.com'].org.a['service.thrift'],
             thriftIdl('A'),
@@ -254,7 +323,7 @@ TestCluster.test('run `idl update`', {
             'Correct version of A'
         );
 
-        // Install B locally
+        // Fetch B locally
         assert.equal(
             data[3].local.idl['github.com'].org.b['service.thrift'],
             thriftIdl('B'),
@@ -315,10 +384,10 @@ TestCluster.test('run `idl update`', {
     }
 });
 
-function installRemote(cluster, remoteId, time, inspectLocal) {
-    return function install(callback) {
+function fetchRemote(cluster, remoteId, time, inspectLocal) {
+    return function fetch(callback) {
         tk.freeze(new Date(time));
-        cluster.idlInstall(
+        cluster.idlFetch(
             remoteId,
             inspectBoth(cluster, inspectLocal, callback)
         );
@@ -393,4 +462,34 @@ function inspectBoth(cluster, inspectLocal, callback) {
 
         callback(null, results);
     }
+}
+
+function mockStdout() {
+    var oldStdout = process.stdout.write;
+    var stdout = '';
+
+    function fakeWriter(str) {
+        stdout += str;
+    }
+
+    process.stdout.write = (function wrapWrite(write) {
+        return function wrappedWrite(string, encoding, fd) {
+            // var args = Array.prototype.slice.apply(arguments);
+            // write.apply(process.stdout, args);
+            fakeWriter.call(fakeWriter, string);
+        };
+    }(process.stdout.write));
+
+    function restoreStdout() {
+        process.stdout.write = oldStdout;
+    }
+
+    function getStdout() {
+        return stdout;
+    }
+
+    return {
+        get: getStdout,
+        restore: restoreStdout
+    };
 }

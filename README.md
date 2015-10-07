@@ -34,8 +34,8 @@ It comes with two CLI commands, `idl-daemon` and `idl`.
     manually publish new versions; instead we should just take `master`
     containing the most recent Thrift IDL file for every service as the
     source of truth.
- - When service interface definitions are fetched and "installed" locally
-    in a project that consumes those services, they should be organized
+ - When service interface definitions are fetched and copied to a
+    a project that consumes those services, they should be organized
     such that cross-service include/import statements are possible (i.e.
     the folder structure should support relative filepath import/include
     statements).
@@ -60,9 +60,9 @@ The `idl` CLI solves this need.
 The `idl` CLI tool has the following sub-commands:
  - `idl list` - List all available services published to the
     registry.
- - `idl install <service-name>` - Fetch a particular service
-    and "install" it in your project in a standard location.
- - `idl update` - Update all "installed" services to the most
+ - `idl fetch <service-name>` - Fetch a particular service's idl
+    and copy it to your project in a standard location.
+ - `idl update` - Update all previously fetched services to the most
     recent versions. Note: You cannot pick and choose which services to
     update. This is intentional.
  - `idl publish` - Publish the Thrift IDL file for your service
@@ -73,6 +73,18 @@ The `idl` CLI tool has the following sub-commands:
 All commands follow the unix standard of being silent if successful. If
 you would like more information about what is happening, run the CLI
 with the `--verbose` flag.
+
+#### `idl init`
+
+This command will create a starter IDL file at the correct filepath in
+a new service. You should use it if you've got a new service and want
+to quickly scaffolder a simple thrift IDL file at the path expected
+by the `idl publish` command.
+
+Example:
+
+    $ idl init
+    $
 
 #### `idl list`
 
@@ -86,19 +98,19 @@ Example:
      - github.com:/qux/quux  2015-09-11T23:07:58.716Z
     $
 
-#### `idl install <service-name>`
+#### `idl fetch <service-name>`
 
-This command will fetch a particular service and "install" it in your
-project in a standard location.
+This command will fetch a particular service's idl file and copy it
+to your project in a standard location.
 
 Once you fetch your first service we also write the `./idl/meta.json`
 meta file that contains the version of the registry as well as the time
 it was last changed.
 
-Note: Installing a new service will result in an implicit update of any
-services that have been installed. For example, if you installed service
-`foo` a month ago and then install service `bar`, `idl` will
-first update service foo to the most current version before installing
+Note: Fetching a new service will result in an implicit update of any
+services that have been fetched. For example, if you fetched service
+`foo` a month ago and then fetch service `bar`, `idl` will
+first update service foo to the most current version before fetching
 `bar`.
 
 This command will also update the ./idl/meta.json file in your
@@ -106,14 +118,13 @@ project.
 
 Example:
 
-    $ idl install github.com:/foo/bar
+    $ idl fetch github.com:/foo/bar
     $
 
 #### `idl update`
 
-This command will update all "installed" services to the most recent
-versions. Note: You cannot pick and choose which services to update.
-This is intentional.
+This command will update all previously fetched services to the most
+recent versions. Note: You cannot pick and choose which services to update. This is intentional.
 
 Since the thrift definitions define the interfaces of the services
 in production, there is only one version for all files. When you
@@ -268,7 +279,7 @@ to simplify this directory, but for now it is what is is.
 
 The `idl-daemon` will fetch all the remotes and place
 their thrift files in the `upstream` repository. You can use
-`idl install` to fetch from the upstream repository.
+`idl fetch` to fetch from the upstream repository.
 
 The `idl-daemon` is a command that should be run with
 cron.
@@ -298,7 +309,7 @@ The config file contains the following fields
 
 This project is not done yet:
 
- - [ ] Implicit update whenever `idl install` is run.
+ - [ ] Implicit update whenever `idl fetch` is run.
  - [ ] Implement `idl validate` so that service authors can locally
        validate the thrift IDL files for their service before publishing.
  - [ ] Implement `idl init` to automatically create a boilerplate

@@ -42,6 +42,12 @@ var globalTimers = require('timers');
 var series = require('run-series');
 var TypedError = require('error/typed');
 var GitCommands = require('../git-commands');
+var readDirFiles = require('read-dir-files').read;
+var setImmediate = require('timers').setImmediate;
+var spawn = require('child_process').spawn;
+var once = require('once');
+var pascalCase = require('pascal-case');
+var template = require('string-template');
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -50,6 +56,7 @@ var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 // var getDependencies = require('../get-dependencies');
 var common = require('../common');
+var pkg = require('../package.json');
 
 var envPrefixes = [
     'IDL'
@@ -62,21 +69,11 @@ var UnknownServiceError = TypedError({
 });
 
 var minimistOpts = {
-    string: ['repository', 'cwd', 'cacheDir'],
-    boolean: ['silent', 'verbose', 'trace', 'colors'],
     alias: {
         h: 'help',
         s: 'silent',
         v: 'version',
         registry: 'repository'
-    },
-    default: {
-        silent: false,
-        verbose: false,
-        trace: false,
-        colors: true,
-        debugGit: false,
-        gitTimeout: 10000
     }
 };
 
@@ -89,8 +86,20 @@ module.exports = IDL;
 function main() {
     var argv = parseArgs(process.argv.slice(2), minimistOpts);
 
+    var defaults = {
+        cwd: process.cwd(),
+        silent: false,
+        verbose: false,
+        trace: false,
+        colors: true,
+        debugGit: false,
+        gitTimeout: 10000,
+        preauth: 'true',
+        preauthShell: 'sh'
+    };
+
     var conf = extend(
-        rc('idl', {}, argv),
+        rc('idl', defaults, argv),
         env(),
         argv
     );
@@ -143,6 +152,11 @@ function IDL(opts) {
     self.command = self.remainder[0];
     self.repository = opts.repository;
     self.helpFlag = opts.help;
+    self.versionFlag = opts.version;
+    self.preauthCommand = opts.preauth || 'true';
+    self.preauthShell = opts.preauthShell || 'sh';
+    self.preauthIgnore = opts.preauthIgnore || [];
+    self.helpUrl = opts.helpUrl;
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
@@ -170,19 +184,22 @@ function IDL(opts) {
         logger: self.logger,
         debugGit: opts.debugGit,
         gitTimeout: opts.gitTimeout,
-        helpUrl: opts.helpUrl,
+        helpUrl: self.helpUrl,
         twoFactorPrompt: opts.twoFactorPrompt,
         twoFactor: opts.twoFactor
     });
 }
 
 IDL.prototype.help = help;
+IDL.prototype.version = version;
 IDL.prototype.processArgs = processArgs;
 
+IDL.prototype.init = init;
 IDL.prototype.list = list;
-IDL.prototype.install = install;
+IDL.prototype.fetch = fetch;
 IDL.prototype.publish = publish;
 IDL.prototype.update = update;
+IDL.prototype.show = show;
 IDL.prototype.fetchRepository = fetchRepository;
 IDL.prototype.cloneRepository = cloneRepository;
 IDL.prototype.pullRepository = pullRepository;
@@ -201,43 +218,87 @@ IDL.exec = function exec(string, options, cb) {
     return idl;
 };
 
-function help() {
+function help(helpUrl, cb) {
+    /*eslint-disable max-len*/
     var helpText = [
         'usage: idl --repository=<repo> [--help] [-h]',
         '                    <command> <args>',
         '',
         'Where <command> is one of:',
-        '  - list',
-        '  - install <name>',
-        '  - publish',
-        '  - update'
-    ].join('\n');
-    console.log(helpText);
+        '  - init           Scaffold simple IDL file at correct path for a new service project',
+        '  - list           list service IDLs available in the registry',
+        '  - fetch <name>   fetch IDLs for a service and place in the current project',
+        '  - show <show>    print the IDLs for a service on stdout',
+        '  - publish        manually publish IDLs for a service to the registry',
+        '  - update         update any "installed" service IDLs to the latest versions',
+        '  - version        print the current version of `idl`'
+    ];
+
+    if (helpUrl && typeof helpUrl === 'string' && helpUrl.length > 0) {
+        helpText = helpText.concat([
+            '',
+            'Additional help specific to how your organization uses `idl`',
+            'can be found at the following url:',
+            helpUrl,
+            ''
+        ]);
+    }
+
+    helpText = helpText.join('\n');
+
+    /*eslint-enable max-len*/
+    setImmediate(cb.bind(this, null, helpText));
+}
+
+function version(cb) {
+    setImmediate(cb.bind(this, null, pkg.version));
 }
 
 function processArgs(cb) {
     var self = this;
 
-    if (self.helpFlag || self.command === 'help') {
-        return self.help();
+    if (self.helpFlag || self.command === 'help' || !self.command) {
+        return self.help(self.helpUrl, cb);
     }
 
-    self.fetchRepository(onRepository);
+    if (self.versionFlag || self.command === 'version') {
+        return self.version(cb);
+    }
+
+    if (self.command === 'init') {
+        return self.init(cb);
+    }
+
+    preauth(
+        self.preauthShell,
+        self.preauthCommand,
+        self.preauthIgnore,
+        fetchRepository
+    );
+
+    function fetchRepository() {
+        self.fetchRepository(onRepository);
+    }
 
     function onRepository(err) {
         if (err) {
             return cb(err);
         }
+        var service;
 
         switch (self.command) {
             case 'list':
                 self.list(cb);
                 break;
 
-            case 'install':
-                var service = self.remainder[1];
+            case 'fetch':
+                service = self.remainder[1];
+                self.fetch(service, cb);
+                break;
 
-                self.install(service, cb);
+            case 'show':
+                service = self.remainder[1];
+                self.show(service, cb);
                 break;
 
             case 'publish':
@@ -256,13 +317,60 @@ function processArgs(cb) {
     }
 }
 
+function init(cb) {
+    var self = this;
+    var serviceName;
+    var destination;
+
+    self.getServiceName(self.cwd, onServiceName);
+
+    function onServiceName(err, fullServiceName) {
+        if (err) {
+            return cb(err);
+        }
+
+        serviceName = fullServiceName;
+
+        destination = path.join(self.cwd, 'idl', fullServiceName);
+
+        mkdirp(destination, onDestinationFolder);
+    }
+
+    function onDestinationFolder(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        var name = serviceName.split('/').pop();
+        var filePath = path.join(destination, name + '.thrift');
+
+        var idlTemplate = [
+            'typedef string UUID',
+            'typedef i64 Timestamp',
+            '',
+            'service {serviceName} {',
+            '    UUID echo(',
+            '        1: UUID uuid',
+            '    )',
+            '}',
+            ''
+        ].join('\n');
+
+        var contents = template(idlTemplate, {
+            serviceName: pascalCase(name)
+        });
+
+        fs.writeFile(filePath, contents, 'utf8', cb);
+    }
+}
+
 function list(cb) {
     var self = this;
 
     return cb(null, ListText(self.meta));
 }
 
-function installFromMeta(cb) {
+function fetchFromMeta(cb) {
     var self = this;
 
     var localMeta = MetaFile({
@@ -280,8 +388,8 @@ function installFromMeta(cb) {
             return cb(err);
         }
 
-        var version = localMeta.toJSON().version;
-        self.checkoutRef('v' + version, onCheckoutRegistryTag);
+        var idlVersion = localMeta.toJSON().version;
+        self.checkoutRef('v' + idlVersion, onCheckoutRegistryTag);
     }
 
     function onCheckoutRegistryTag(err) {
@@ -290,21 +398,21 @@ function installFromMeta(cb) {
         }
 
         var services = Object.keys(localMeta.toJSON().remotes)
-            .map(makeInstallServiceThunk);
+            .map(makeFetchServiceThunk);
 
         parallel(services, cb);
     }
 
-    function makeInstallServiceThunk(service) {
-        return install.bind(self, service);
+    function makeFetchServiceThunk(service) {
+        return fetch.bind(self, service);
     }
 }
 
-function install(service, cb) {
+function fetch(service, cb) {
     var self = this;
 
     if (!service) {
-        return installFromMeta.call(self, cb);
+        return fetchFromMeta.call(self, cb);
     }
 
     var clientMetaFile = MetaFile({
@@ -322,7 +430,7 @@ function install(service, cb) {
             return cb(err);
         }
 
-        var alreadyInstalled = !!clientMetaFile.toJSON().remotes[service];
+        var alreadyFetched = !!clientMetaFile.toJSON().remotes[service];
         var existsInRegistry = !!self.meta.toJSON().remotes[service];
 
         if (!existsInRegistry) {
@@ -331,7 +439,7 @@ function install(service, cb) {
             }));
         }
 
-        if (alreadyInstalled) {
+        if (alreadyFetched) {
             onUpdate();
         } else {
             self.update(onUpdate);
@@ -409,18 +517,59 @@ function install(service, cb) {
 
     //     return cb();
 
-    //     var dependenciesInstallers = Object.keys(dependencies)
-    //         .map(makeInstaller);
+    //     var dependenciesFetchers = Object.keys(dependencies)
+    //         .map(makeFetcher);
 
-    //     function makeInstaller(dependency) {
-    //         return function installDependencyThunk(callback) {
-    //             install(dependency, callback);
+    //     function makeFetcher(dependency) {
+    //         return function fetchDependencyThunk(callback) {
+    //             fetch(dependency, callback);
     //         };
     //     }
 
-    //     series(dependenciesInstallers, cb);
+    //     series(dependenciesFetchers, cb);
     // }
 
+}
+
+function show(service, cb) {
+    var self = this;
+
+    if (!service) {
+        return cb(new Error('service unspecified'));
+    }
+
+    var existsInRegistry = !!self.meta.toJSON().remotes[service];
+
+    if (!existsInRegistry) {
+        cb(UnknownServiceError({
+            service: service
+        }));
+    }
+
+    var source = path.join(
+        self.repoCacheLocation,
+        self.idlFolder,
+        service
+    );
+
+    readDirFiles(source, 'utf8', onReadFiles);
+
+    function onReadFiles(err, files) {
+        if (err) {
+            return cb(err);
+        }
+
+        traverse(files).forEach(printFile);
+
+        function printFile(value) {
+            var filepath = this.path.join('/');
+            if (/\.thrift$/.test(filepath)) {
+                process.stdout.write(path.join(service, filepath) + '\n');
+                process.stdout.write(value + '\n');
+            }
+        }
+        cb();
+    }
 }
 
 function publish(cb) {
@@ -544,7 +693,7 @@ function update(cb) {
 
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
         series(remotes.map(function buildThunk(remote) {
-            return self.install.bind(self, remote);
+            return self.fetch.bind(self, remote);
         }), cb);
     }
 }
@@ -661,6 +810,25 @@ function toString() {
         });
 
     return textTable(tuples);
+}
+
+function preauth(shell, command, ignoreList, cb) {
+    shell = shell || 'sh';
+    command = command || 'true';
+
+    if (command !== 'true' &&
+        Array.isArray(ignoreList) &&
+        ignoreList.length > 0) {
+        command += ' 2>&1 | grep -v -e "' + ignoreList.join('" -e "') + '"';
+    }
+
+    cb = once(cb);
+    var args = ['-c', command];
+    var opts = {stdio: 'inherit'};
+    var pa = spawn(shell, args, opts);
+    pa.on('error', cb);
+    pa.on('exit', cb);
+    pa.on('close', cb);
 }
 
 if (require.main === module) {
