@@ -1,7 +1,19 @@
-language: node_js
-node_js:
-  - "0.8"
-  - "0.10"
-  - "0.11"
-before_install: npm i npm@latest -g
+matrix:
+  include:
+    - os: "linux"
+      env: NODE_VERSION="4.0"
+    - os: "linux"
+      env: NODE_VERSION="0.12"
+    - os: "linux"
+      env: NODE_VERSION="0.10"
+    - os: "osx"
+      env: NODE_VERSION="4.0"
+
+before_install:
+  - npm i npm@latest -g
+  - rm -rf ~/.nvm
+  - git clone https://github.com/creationix/nvm.git ~/.nvm
+  - source ~/.nvm/nvm.sh
+  - nvm install $NODE_VERSION
+install: echo "install"
 script: npm run travis
