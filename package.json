@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "camelcase-keys": "^1.0.0",
+    "chalk": "^1.1.1",
     "cpr": "^0.4.1",
     "debug-logtron": "4.1.0",
     "deep-equal": "^1.0.0",
@@ -37,8 +38,10 @@
     "run-parallel": "1.1.1",
     "run-series": "1.1.1",
     "splitargs": "0.0.3",
+    "string-length": "^1.0.1",
     "string-template": "0.2.1",
     "text-table": "0.2.0",
+    "time-ago": "^0.1.0",
     "traverse": "^0.6.6",
     "uniq": "^1.0.1",
     "xtend": "4.0.0"

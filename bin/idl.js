@@ -48,6 +48,9 @@ var spawn = require('child_process').spawn;
 var once = require('once');
 var pascalCase = require('pascal-case');
 var template = require('string-template');
+var chalk = require('chalk');
+var stringLength = require('string-length');
+var timeAgo = require('time-ago')();
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -110,15 +113,25 @@ function main() {
     conf.logOpts.trace = conf.trace;
     conf.logOpts.colors = conf.colors;
 
-    IDL(conf).processArgs(function onFini(err, text) {
-        if (err) {
-            console.error('ERR: ' + err);
+    conf.cwd = conf.cwd || process.cwd();
+
+    resolveCwd(conf.cwd, function onCwd(cwdErr, cwd) {
+        if (cwdErr) {
+            console.error('ERR: ' + cwdErr);
             process.exit(1);
         }
+        conf.cwd = cwd;
 
-        if (text) {
-            console.log(text.toString());
-        }
+        IDL(conf).processArgs(function onFini(err, text) {
+            if (err) {
+                console.error('ERR: ' + err);
+                process.exit(1);
+            }
+
+            if (text) {
+                console.log(text.toString());
+            }
+        });
     });
 }
 
@@ -134,6 +147,51 @@ function env() {
         if (typeof value === 'object') {
             this.update(camelCaseKeys(value));
         }
+    }
+}
+
+function resolveCwd(cwd, cb) {
+
+    testDir(splitPath(cwd));
+
+    function testDir(parts) {
+        // If we don't find an idl folder, return the cwd
+        if (parts.length === 0) {
+            return cb(null, cwd);
+        }
+
+        var p = parts.join('');
+
+        var idlPath = path.join(p, 'idl');
+        fs.exists(idlPath, hasIdl);
+
+        function hasIdl(exists) {
+            if (exists) {
+                fs.stat(idlPath, onStat);
+            } else {
+                testDir(parts.slice(0, -1));
+            }
+        }
+
+        function onStat(err, stats) {
+            if (err) {
+                return cb(err);
+            }
+            if (stats.isDirectory()) {
+                cb(null, p);
+            } else {
+                testDir(parts.slice(0, -1));
+            }
+        }
+    }
+
+    function splitPath(p) {
+        var ps = p.split(/(\/|\\)/);
+        if (!ps.length) {
+            return ps;
+        }
+        // if path starts with a '/', then split produces an empty string at [0]
+        return !ps[0].length ? ps.slice(1) : ps;
     }
 }
 
@@ -367,7 +425,24 @@ function init(cb) {
 function list(cb) {
     var self = this;
 
-    return cb(null, ListText(self.meta));
+    var localMeta = MetaFile({
+        fileName: path.join(
+            self.cwd,
+            self.idlFolder,
+            self.metaFilename
+        )
+    });
+
+    localMeta.readFile(onReadLocalMeta);
+
+    function onReadLocalMeta(err) {
+        if (err) {
+            return cb(err);
+        }
+
+        cb(null, ListText(self.meta, localMeta));
+    }
+
 }
 
 function fetchFromMeta(cb) {
@@ -787,14 +862,13 @@ function checkoutRef(ref, cb) {
     }, cb);
 }
 
-function ListText(meta) {
+function ListText(meta, localMeta) {
     if (!(this instanceof ListText)) {
-        return new ListText(meta);
+        return new ListText(meta, localMeta);
     }
-
     var self = this;
-
     self.remotes = meta.toJSON().remotes;
+    self.localRemotes = localMeta.toJSON().remotes;
 }
 
 ListText.prototype.toString = toString;
@@ -803,13 +877,60 @@ function toString() {
     var self = this;
 
     var tuples = Object.keys(self.remotes)
-        .map(function toTuple(remoteKey) {
-            var remote = self.remotes[remoteKey];
+        .map(toTableEntry)
+        .sort(sortAlphabetically);
 
-            return [' - ' + remoteKey, remote.time];
-        });
+    var headers = ['', 'SERVICE', 'REGISTRY', 'LOCAL'].map(underline);
+    tuples.unshift(headers);
 
-    return textTable(tuples);
+    var table = textTable(tuples, {
+        stringLength: stringLength
+    });
+
+    return [
+        table,
+        (tuples.length - 1) + ' services available'
+    ].join('\n');
+
+    function toTableEntry(remoteKey) {
+        var remote = self.remotes[remoteKey];
+        var local = self.localRemotes[remoteKey];
+        var localTime = local && local.time || '';
+        var age = '-';
+        if (localTime && localTime.length > 0) {
+            var color = remote.time === localTime ? 'green' : 'red';
+            age = new Date(remote.time).getTime() -
+                new Date(localTime).getTime();
+            localTime = chalk[color](timeAgo.ago(new Date(localTime)));
+            age = timeAgo.ago(new Date() - age).replace('ago', 'old');
+            if (age === '0 m old') {
+                age = 'current';
+            }
+            if (age !== '-') {
+                age = chalk[color](age);
+            }
+        }
+
+        return [
+            '-',
+            remoteKey,
+            timeAgo.ago(new Date(remote.time)),
+            age
+        ];
+    }
+
+    function sortAlphabetically(a, b) {
+        if (a[1] > b[1]) {
+            return 1;
+        }
+        if (a[1] < b[1]) {
+            return -1;
+        }
+    }
+
+    function underline(h) {
+        return chalk.blue.underline(h);
+    }
 }
 
 function preauth(shell, command, ignoreList, cb) {

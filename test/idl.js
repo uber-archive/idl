@@ -26,6 +26,10 @@ var path = require('path');
 var tk = require('timekeeper');
 var template = require('string-template');
 var process = require('process');
+var timeAgo = require('time-ago')();
+var stringLength = require('string-length');
+var textTable = require('text-table');
+var chalk = require('chalk');
 
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
@@ -75,6 +79,9 @@ TestCluster.test('run `idl init`', {
 
 TestCluster.test('run `idl list`', {
 }, function t(cluster, assert) {
+
+    tk.freeze(new Date());
+
     parallel({
         list: cluster.idlGet.bind(cluster, 'list'),
         upstream: cluster.inspectUpstream.bind(cluster)
@@ -105,19 +112,36 @@ TestCluster.test('run `idl list`', {
             list.remotes['github.com/org/d'].time
         );
 
+        var now = Date.now();
+
         var text = list.toString();
 
-        assert.equal(
-            text,
-            ' - github.com/org/a  ' + upstream.meta.remotes['github.com/org/a']
-                .time + '\n' +
-            ' - github.com/org/b  ' + upstream.meta.remotes['github.com/org/b']
-                .time + '\n' +
-            ' - github.com/org/c  ' + upstream.meta.remotes['github.com/org/c']
-                .time + '\n' +
-            ' - github.com/org/d  ' + upstream.meta.remotes['github.com/org/d']
-                .time
-        );
+        var expectedLines = [
+            ['-', 'github.com/org/a', ago('a'), '-'],
+            ['-', 'github.com/org/b', ago('b'), '-'],
+            ['-', 'github.com/org/c', ago('c'), '-'],
+            ['-', 'github.com/org/d', ago('d'), '-']
+        ];
+        var headers = ['', 'SERVICE', 'REGISTRY', 'LOCAL'].map(underline);
+        expectedLines.unshift(headers);
+
+        var expectedText = textTable(expectedLines, {
+            stringLength: stringLength
+        }) + '\n4 services available';
+
+        assert.equal(text, expectedText);
+
+        function ago(letter) {
+            var ts = upstream.meta.remotes['github.com/org/' + letter].time;
+            var delta = now - (new Date(ts)).getTime();
+            return timeAgo.ago(new Date(Date.now() - delta));
+        }
+
+        function underline(h) {
+            return chalk.blue.underline(h);
+        }
+
+        tk.reset();
 
         assert.end();
     }
