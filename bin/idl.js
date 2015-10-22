@@ -769,7 +769,12 @@ function update(cb) {
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
         series(remotes.map(function buildThunk(remote) {
             return self.fetch.bind(self, remote);
-        }), cb);
+        }), function onResults(err, results) {
+            if (err) {
+                return cb(err);
+            }
+            cb();
+        });
     }
 }
 
