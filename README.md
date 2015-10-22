@@ -1,12 +1,10 @@
 # idl
 
-<!--
-    [![build status][build-png]][build]
-    [![Coverage Status][cover-png]][cover]
-    [![Davis Dependency status][dep-png]][dep]
--->
+[![build status][build-png]][build]
+[![Coverage Status][cover-png]][cover]
+[![Davis Dependency status][dep-png]][dep]
 
-<!-- [![NPM][npm-png]][npm] -->
+[![NPM][npm-png]][npm]
 
 A CLI for managing thrift IDL files
 

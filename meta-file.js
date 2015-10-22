@@ -102,8 +102,8 @@ function updateRecord(folderName, opts, callback) {
     self._updateVersion(opts);
 
     self._remotes[folderName] = {
-        time: self._lastDate.toISOString(),
-        version: self._lastDate.getTime(),
+        time: opts.time ? opts.time : self._lastDate.toISOString(),
+        version: opts.version ? opts.version : self._lastDate.getTime(),
         sha: opts.sha,
         shasums: opts.shasums
     };
