@@ -769,9 +769,9 @@ function update(cb) {
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
         series(remotes.map(function buildThunk(remote) {
             return self.fetch.bind(self, remote);
-        }), function onResults(err, results) {
-            if (err) {
-                return cb(err);
+        }), function onResults(updateErr, results) {
+            if (updateErr) {
+                return cb(updateErr);
             }
             cb();
         });
