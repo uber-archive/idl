@@ -888,8 +888,8 @@ function toString() {
     });
 
     return [
-        table,
-        (tuples.length - 1) + ' services available'
+        'total ' + (tuples.length - 1) + ' services',
+        table
     ].join('\n');
 
     function toTableEntry(remoteKey) {

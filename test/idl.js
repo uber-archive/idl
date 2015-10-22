@@ -41,7 +41,6 @@ var updatedThriftIdlTemplate = '' +
     '}\n';
 
 TestCluster.test('run `idl init`', {
-    fetchRemotes: false
 }, function t(cluster, assert) {
 
     series([
@@ -125,9 +124,9 @@ TestCluster.test('run `idl list`', {
         var headers = ['', 'SERVICE', 'REGISTRY', 'LOCAL'].map(underline);
         expectedLines.unshift(headers);
 
-        var expectedText = textTable(expectedLines, {
+        var expectedText = 'total 4 services\n' + textTable(expectedLines, {
             stringLength: stringLength
-        }) + '\n4 services available';
+        });
 
         assert.equal(text, expectedText);
 

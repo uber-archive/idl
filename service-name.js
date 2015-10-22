@@ -41,8 +41,16 @@ function ServiceName(logger) {
             // this works for both HTTPS and SSH git remotes
             var gitUrl = stdout.split('\n').filter(origin)[0]
                 .split(/\s/)[1]     // get the first git url
-                .split('@')[1]      // drop everything before the username
-                .split('.git')[0]   // drop .git suffix if one
+                .split('@');
+
+            // drop everything before the username
+            gitUrl = gitUrl[1] ? gitUrl[1] : gitUrl[0];
+
+            if (gitUrl.indexOf('https://') === 0) {
+                gitUrl = gitUrl.replace('https://', '');
+            }
+
+            gitUrl = gitUrl.split('.git')[0]   // drop .git suffix if one
                 .replace(':', '/'); // convert to valid path
 
             cb(null, gitUrl);
