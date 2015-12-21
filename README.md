@@ -96,7 +96,7 @@ Example:
      - github.com:/qux/quux  2015-09-11T23:07:58.716Z
     $
 
-#### `idl install <service-name>`
+#### `idl fetch <service-name>`
 
 This command will fetch a particular service's idl file and copy it
 to your project in a standard location.
