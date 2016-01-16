@@ -638,7 +638,7 @@ function show(service, cb) {
 
         function printFile(value) {
             var filepath = this.path.join('/');
-            if (/\.thrift$/.test(filepath)) {
+            if (common.fileFilter(filepath)) {
                 process.stdout.write(path.join(service, filepath) + '\n');
                 process.stdout.write(value + '\n');
             }
