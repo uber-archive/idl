@@ -136,7 +136,7 @@ Example.
     $ idl update
     $
 
-#### `idl publish
+#### `idl publish`
 
 This command will publish the Thrift IDL file for your service to the
 idl registry repository. This command should set up to be
@@ -145,7 +145,7 @@ automatically executed when a change to the service IDL lands on
 
 Example:
 
-    $ trift-store publish
+    $ idl publish
     $
 
 #### Command line flags
