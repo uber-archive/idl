@@ -24,4 +24,4 @@ module.exports.fileFilter = function fileFilter(filepath) {
     return /\.(thrift|json)$/.test(filepath);
 };
 
-module.exports.idlFolder = 'idl';
+module.exports.idlDirectory = 'idl';

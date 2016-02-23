@@ -63,9 +63,9 @@ MetaFile.prototype.readFile = function readFile(cb) {
     }
 };
 
-MetaFile.prototype.getSha = function getSha(folderName) {
+MetaFile.prototype.getSha = function getSha(directoryName) {
     var self = this;
-    var remote = self._remotes[folderName];
+    var remote = self._remotes[directoryName];
 
     if (!remote) {
         return null;
@@ -74,9 +74,9 @@ MetaFile.prototype.getSha = function getSha(folderName) {
     return remote.sha;
 };
 
-MetaFile.prototype.getShasums = function getShasums(folderName) {
+MetaFile.prototype.getShasums = function getShasums(directoryName) {
     var self = this;
-    var remote = self._remotes[folderName];
+    var remote = self._remotes[directoryName];
 
     if (!remote) {
         return null;
@@ -95,13 +95,13 @@ MetaFile.prototype._updateVersion = function version(opts) {
 };
 
 MetaFile.prototype.updateRecord =
-function updateRecord(folderName, opts, callback) {
+function updateRecord(directoryName, opts, callback) {
     opts = opts || {};
     var self = this;
 
     self._updateVersion(opts);
 
-    self._remotes[folderName] = {
+    self._remotes[directoryName] = {
         time: opts.time ? opts.time : self._lastDate.toISOString(),
         version: opts.version ? opts.version : self._lastDate.getTime(),
         sha: opts.sha,

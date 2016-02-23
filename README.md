@@ -35,7 +35,7 @@ It comes with two CLI commands, `idl-daemon` and `idl`.
  - When service interface definitions are fetched and copied to a
     a project that consumes those services, they should be organized
     such that cross-service include/import statements are possible (i.e.
-    the folder structure should support relative filepath import/include
+    the directory structure should support relative filepath import/include
     statements).
 
 ## The CLI
@@ -76,7 +76,7 @@ with the `--verbose` flag.
 
 This command will create a starter IDL file at the correct filepath in
 a new service. You should use it if you've got a new service and want
-to quickly scaffolder a simple thrift IDL file at the path expected
+to quickly scaffold a simple thrift IDL file at the path expected
 by the `idl publish` command.
 
 Example:
@@ -191,18 +191,18 @@ Given your application name (`appname`), rc will look in all the obvious places 
   * `/etc/idlrc`
   * `/etc/idl/config`
 
-### The `./idl/` folder
+### The `./idl/` directory
 
-All services and clients will have a `./idl/` folder at the root of
-the repo. All thrift IDL files are contained in this folder.
+All services and clients will have a `./idl/` directory at the root of
+the repo. All thrift IDL files are contained in this directory.
 
-Service authors need to understand how this folder is organized and
+Service authors need to understand how this directory is organized and
 should only every edit/modify the thrift IDL files for the service in
 question. Client authors should never have to edit/modify files in this
-folder and should only use the files contained therein as references
+directory and should only use the files contained therein as references
 for the interfaces they are consuming.
 
-The idl folder is organized so that every thrift IDL file (for the
+The idl directory is organized so that every thrift IDL file (for the
 service being authored or the services being consumed) is located at a
 sub-path that mirrors the git remote `origin` URL of a service.
 
@@ -219,15 +219,15 @@ or
     origin  ssh://git@github.com/uber/foo-service.git (fetch)
     origin  ssh://git@github.com/uber/foo-service.git (push)
 
-The idl folder for your service mirrors these two addresses.
+The idl directory for your service mirrors these two addresses.
 Assuming the output above, the idl path for the service
 being authoring will be `./idl/github.com/uber/foo-service/`.
-This folder will contain the thrift IDL files that will be
+This directory will contain the thrift IDL files that will be
 published to your idl registry repo when `idl publish`
-is executed. The IDL files in this particular sub-folder are to be
+is executed. The IDL files in this particular sub-directory are to be
 manually managed by service authors.
 
-All other folders are contain service defitions for services being
+All other directories are contain service defitions for services being
 consumed and should not be edited/modified and should only be
 consulted as a reference when looking up a type definition for a
 service or a function definition for a service being consumed.
@@ -237,13 +237,13 @@ other services, the unmanaged definitions for that service and
 managed definitions for the services being consumed will live
 side by side in sibling directories.
 
-The reason for mixing both managed and unmanaged folders together
+The reason for mixing both managed and unmanaged directories together
 is to support relative filepath includes in thrift files.
 
 For example, if the service git@github.com:foo/bar.git references
 type definitions from the services git@github.com:foo/baz.git and
 git@github.com:qux/quux.git, then you might see the following
-folder and file structure:
+directory and file structure:
 
     $ tree
     .
@@ -268,7 +268,7 @@ contain the following includes in its header section:
     include "../baz/baz.thrift"
     include "../../qux/quux/quux.thrift"
 
-The complexity of how this folder is organized is a necessary
+The complexity of how this directory is organized is a necessary
 evil to support relative file includes. If, in the future, the
 `include` directive supports richer semantics, it may be possible
 to simplify this directory, but for now it is what is is.
@@ -291,7 +291,7 @@ The config file contains the following fields
 ```json
 {
     "upstream": "git+ssh://git@github.com/my-company/idl-registry",
-    "repositoryFolder": "/var/lib/my-company/idl/repo",
+    "repositoryDirectory": "/var/lib/my-company/idl/repo",
     "cacheLocation": "/var/lib/my-company/idl/cache",
     "remotes": [{
         "repository": "git+ssh://git@github.com/my-company/user-service",
