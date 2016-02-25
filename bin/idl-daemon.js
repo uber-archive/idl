@@ -176,9 +176,14 @@ function IDLDaemonConfig(data) {
     self.upstream = data.upstream;
     self.fetchInterval = data.fetchInterval;
 
-    self.repositoryDirectory = data.repositoryDirectory || path.join(
-        os.tmpDir(), 'idl', new Date().toISOString()
-    );
+    // To determine the repository directory we prefer data.repositoryDirectory,
+    // but also support data.repositoryFolder for older versions of idl that
+    // used that terminology. Otherwise, create a temporary directory based on
+    // the current date.
+    self.repositoryDirectory = (
+        data.repositoryDirectory ||
+        data.repositoryFolder ||
+        path.join(os.tmpDir(), 'idl', new Date().toISOString()));
     self.cacheLocation = data.cacheLocation || path.join(
         HOME, '.idl', 'remote-cache'
     );
