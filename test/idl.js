@@ -30,6 +30,7 @@ var timeAgo = require('time-ago')();
 var stringLength = require('string-length');
 var textTable = require('text-table');
 var chalk = require('chalk');
+var fs = require('fs');
 
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');
@@ -407,6 +408,45 @@ TestCluster.test('run `idl update`', {
     }
 });
 
+TestCluster.test('run `idl update` with corrupt meta.json', {
+}, function t(cluster, assert) {
+
+    var now = Date.now();
+
+    series([
+        fetchRemote(cluster, 'github.com/org/a', now + 2000, false),
+        corruptMetaJson(cluster, now + 3000),
+        updateLocal(cluster, now + 4000, false)
+    ], onResults);
+
+    function onResults(err, data) {
+        if (err) {
+            assert.ifError(err);
+        }
+        var expected = 'Corrupt meta.json file';
+        assert.equal(data[2].stderr, expected, 'Warn user about corrupt meta');
+        tk.reset();
+        assert.end();
+    }
+});
+
+function corruptMetaJson(cluster, time) {
+    return function corrupt(callback) {
+        tk.freeze(new Date(time));
+        var metaPath = path.join(cluster.localApp, 'idl', 'meta.json');
+        fs.readFile(metaPath, 'utf8', onRawMetaJson);
+
+        function onRawMetaJson(err, rawJson) {
+            if (err) {
+                return callback(err);
+            }
+            var lines = rawJson.split('\n');
+            rawJson = lines.slice(0, lines.length - 2).join('\n');
+            fs.writeFile(metaPath, rawJson, 'utf8', callback);
+        }
+    };
+}
+
 function fetchRemote(cluster, remoteId, time, inspectLocal) {
     return function fetch(callback) {
         tk.freeze(new Date(time));
@@ -460,13 +500,18 @@ function updateLocal(cluster, time, inspectLocal) {
 }
 
 function inspectBoth(cluster, inspectLocal, callback) {
-    return function inspect() {
+    var stdout;
+    var stderr;
+
+    return function inspect(err, text) {
         var tasks = {
             upstream: cluster.inspectUpstream.bind(cluster)
         };
         if (inspectLocal) {
             tasks.local = cluster.inspectLocalApp.bind(cluster);
         }
+        stderr = err;
+        stdout = text;
         parallel(tasks, onResults);
     };
 
@@ -483,28 +528,32 @@ function inspectBoth(cluster, inspectLocal, callback) {
             );
         }
 
+        results.stdout = stdout;
+        results.stderr = stderr;
+
         callback(null, results);
     }
 }
 
-function mockStdout() {
-    var oldStdout = process.stdout.write;
+function mockStdout(type) {
+    type = type || 'stdout';
+    var oldStdout = process[type].write;
     var stdout = '';
 
     function fakeWriter(str) {
         stdout += str;
     }
 
-    process.stdout.write = (function wrapWrite(write) {
+    process[type].write = (function wrapWrite(write) {
         return function wrappedWrite(string, encoding, fd) {
             // var args = Array.prototype.slice.apply(arguments);
             // write.apply(process.stdout, args);
             fakeWriter.call(fakeWriter, string);
         };
-    }(process.stdout.write));
+    }(process[type].write));
 
     function restoreStdout() {
-        process.stdout.write = oldStdout;
+        process[type].write = oldStdout;
     }
 
     function getStdout() {

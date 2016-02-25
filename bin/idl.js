@@ -762,6 +762,9 @@ function update(cb) {
 
     function onMeta(err, meta) {
         if (err) {
+            if (err.constructor.name === 'SyntaxError') {
+                return cb('Corrupt meta.json file');
+            }
             // no meta file; nothing to do
             return cb(null);
         }
