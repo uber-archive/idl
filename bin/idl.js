@@ -762,8 +762,11 @@ function update(cb) {
 
     function onMeta(err, meta) {
         if (err) {
-            // no meta file; nothing to do
-            return cb(null);
+            if (err.constructor.name === 'SyntaxError') {
+                return cb('Corrupt meta.json file');
+            }
+            // unknown err, possibly no meta file; nothing to do
+            return cb(err.message);
         }
 
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
