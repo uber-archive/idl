@@ -101,7 +101,7 @@ IDLDaemon.prototype.bootstrap = function bootstrap(fetchRemotes, cb) {
         self.repo = Repository({
             remotes: self.config.remotes,
             upstream: self.config.upstream,
-            repositoryFolder: self.config.repositoryFolder,
+            repositoryDirectory: self.config.repositoryDirectory,
             cacheLocation: self.config.cacheLocation,
             logger: self.logger
         });
@@ -176,9 +176,14 @@ function IDLDaemonConfig(data) {
     self.upstream = data.upstream;
     self.fetchInterval = data.fetchInterval;
 
-    self.repositoryFolder = data.repositoryFolder || path.join(
-        os.tmpDir(), 'idl', new Date().toISOString()
-    );
+    // To determine the repository directory we prefer data.repositoryDirectory,
+    // but also support data.repositoryFolder for older versions of idl that
+    // used that terminology. Otherwise, create a temporary directory based on
+    // the current date.
+    self.repositoryDirectory = (
+        data.repositoryDirectory ||
+        data.repositoryFolder ||
+        path.join(os.tmpDir(), 'idl', new Date().toISOString()));
     self.cacheLocation = data.cacheLocation || path.join(
         HOME, '.idl', 'remote-cache'
     );
@@ -206,26 +211,26 @@ function Remote(opts) {
 
     self.repository = opts.repository;
     self.branch = opts.branch || 'master';
-    self.folderName = null;
+    self.directoryName = null;
 
     var parts;
     if (opts.strategy === 'lastSegment') {
         parts = self.repository.split('/');
-        self.folderName = parts[parts.length - 1];
+        self.directoryName = parts[parts.length - 1];
     // TODO: test lastTwoSegments strategy
     } else if (opts.strategy === 'lastTwoSegments') {
         parts = self.repository.split('/');
-        self.folderName = path.join(
+        self.directoryName = path.join(
             parts[parts.length - 2],
             parts[parts.length - 1]
         );
     // TODO: test splitOnColon strategy
     } else if (opts.strategy === 'splitOnColon') {
         parts = self.repository.split(':');
-        self.folderName = parts[parts.length - 1];
+        self.directoryName = parts[parts.length - 1];
     }
 
-    self.fileName = self.folderName + '.thrift';
+    self.fileName = self.directoryName + '.thrift';
 }
 
 if (require.main === module) {

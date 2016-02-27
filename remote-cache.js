@@ -54,7 +54,7 @@ function update(remote, callback) {
     var self = this;
 
     if (self.cacheDirExists) {
-        checkRemoteFolder();
+        checkRemoteDirectory();
     } else {
         mkdirp(self.cacheLocation, onCacheLocationMade);
     }
@@ -65,12 +65,12 @@ function update(remote, callback) {
         }
 
         self.cacheDirExists = true;
-        checkRemoteFolder();
+        checkRemoteDirectory();
     }
 
-    function checkRemoteFolder() {
-        var folder = path.join(self.cacheLocation, remote.folderName);
-        fs.exists(folder, onExists);
+    function checkRemoteDirectory() {
+        var directory = path.join(self.cacheLocation, remote.directoryName);
+        fs.exists(directory, onExists);
     }
 
     function onExists(exists) {
@@ -82,7 +82,7 @@ function update(remote, callback) {
     }
 };
 
-// git clone --no-checkout --depth 1 remote folderName
+// git clone --no-checkout --depth 1 remote directoryName
 RemoteCache.prototype._initialLoad =
 function _initialLoad(remote, callback) {
     var self = this;
@@ -92,7 +92,7 @@ function _initialLoad(remote, callback) {
         '--branch ' + remote.branch + ' ' +
         '--depth 1 ' +
         remote.repository + ' ' +
-        remote.folderName;
+        remote.directoryName;
     gitexec(command, {
         cwd: self.cacheLocation,
         logger: self.logger,
@@ -104,7 +104,7 @@ RemoteCache.prototype._pullAndUpdate =
 function _pullAndUpdate(remote, callback) {
     var self = this;
 
-    var cwd = path.join(self.cacheLocation, remote.folderName);
+    var cwd = path.join(self.cacheLocation, remote.directoryName);
 
     series([
         // TODO: do an efficient fetch

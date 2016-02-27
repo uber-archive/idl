@@ -155,7 +155,7 @@ function resolveCwd(cwd, cb) {
     testDir(splitPath(cwd));
 
     function testDir(parts) {
-        // If we don't find an idl folder, return the cwd
+        // If we don't find an idl directory, return the cwd
         if (parts.length === 0) {
             return cb(null, cwd);
         }
@@ -232,7 +232,7 @@ function IDL(opts) {
     });
 
     self.metaFilename = 'meta.json';
-    self.idlFolder = 'idl';
+    self.idlDirectory = 'idl';
 
     self.meta = null;
 
@@ -391,10 +391,10 @@ function init(cb) {
 
         destination = path.join(self.cwd, 'idl', fullServiceName);
 
-        mkdirp(destination, onDestinationFolder);
+        mkdirp(destination, onDestinationDirectory);
     }
 
-    function onDestinationFolder(err) {
+    function onDestinationDirectory(err) {
         if (err) {
             return cb(err);
         }
@@ -428,7 +428,7 @@ function list(cb) {
     var localMeta = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             self.metaFilename
         )
     });
@@ -451,7 +451,7 @@ function fetchFromMeta(cb) {
     var localMeta = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             self.metaFilename
         )
     });
@@ -493,7 +493,7 @@ function fetch(service, cb) {
     var clientMetaFile = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             self.metaFilename
         )
     });
@@ -528,13 +528,13 @@ function fetch(service, cb) {
 
         var destination = path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             service
         );
 
         var source = path.join(
             self.repoCacheLocation,
-            self.idlFolder,
+            self.idlDirectory,
             service
         );
 
@@ -623,7 +623,7 @@ function show(service, cb) {
 
     var source = path.join(
         self.repoCacheLocation,
-        self.idlFolder,
+        self.idlDirectory,
         service
     );
 
@@ -666,12 +666,12 @@ function publish(cb) {
 
         destination = path.join(
             self.repoCacheLocation,
-            self.idlFolder,
+            self.idlDirectory,
             service
         );
         source = path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             service
         );
 
@@ -753,7 +753,7 @@ function update(cb) {
     var clientMetaFile = MetaFile({
         fileName: path.join(
             self.cwd,
-            self.idlFolder,
+            self.idlDirectory,
             self.metaFilename
         )
     });

@@ -82,7 +82,7 @@ function TestCluster(opts) {
 
     self.config = extend({
         upstream: 'file://' + self.upstreamDir,
-        repositoryFolder: self.repositoryDir,
+        repositoryDirectory: self.repositoryDir,
         fileNameStrategy: 'lastSegment',
         cacheLocation: self.cacheDir,
         fetchInterval: opts.fetchInterval || 30 * 1000,

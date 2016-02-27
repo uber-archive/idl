@@ -44,18 +44,18 @@ function Repository(opts) {
     var self = this;
 
     self.metaFilename = 'meta.json';
-    self.idlFolderName = 'idl';
+    self.idlDirectoryName = 'idl';
     self.thriftExtension = '.thrift';
 
     self.remotes = opts.remotes;
     self.upstream = opts.upstream;
-    self.repositoryFolder = opts.repositoryFolder;
+    self.repositoryDirectory = opts.repositoryDirectory;
 
-    self.idlFolder = path.join(self.repositoryFolder, self.idlFolderName);
+    self.idlDirectory = path.join(self.repositoryDirectory, self.idlDirectoryName);
     self.logger = opts.logger;
 
     self.meta = MetaFile({
-        fileName: path.join(self.repositoryFolder, self.metaFilename)
+        fileName: path.join(self.repositoryDirectory, self.metaFilename)
     });
     self.remoteCache = RemoteCache({
         cacheLocation: opts.cacheLocation,
@@ -65,7 +65,7 @@ function Repository(opts) {
     self.getServiceName = ServiceName(self.logger);
 }
 
-/* rm -rf repoFolder; */
+/* rm -rf repoDirectory; */
 Repository.prototype.bootstrap =
 function bootstrap(fetchRemotes, callback) {
     if (typeof fetchRemotes === 'function') {
@@ -75,11 +75,11 @@ function bootstrap(fetchRemotes, callback) {
 
     var self = this;
 
-    rimraf(self.repositoryFolder, onRemoved);
+    rimraf(self.repositoryDirectory, onRemoved);
 
     function onRemoved(err) {
         if (err) {
-            self.logger.error('removing repositoryFolder failed', {
+            self.logger.error('removing repositoryDirectory failed', {
                 err: err
             });
             return callback(err);
@@ -114,16 +114,16 @@ function bootstrap(fetchRemotes, callback) {
     }
 };
 
-/* git clone upstream repoFolder */
+/* git clone upstream repoDirectory */
 Repository.prototype._cloneRepo =
 function _cloneRepo(callback) {
     var self = this;
 
-    var cwd = path.dirname(self.repositoryFolder);
+    var cwd = path.dirname(self.repositoryDirectory);
 
     var command = 'git clone ' +
         self.upstream + ' ' +
-        self.repositoryFolder;
+        self.repositoryDirectory;
     gitexec(command, {
         cwd: cwd,
         logger: self.logger,
@@ -132,7 +132,7 @@ function _cloneRepo(callback) {
 
     function onCloned(err, stdout, stderr) {
         if (err) {
-            self.logger.error('git clone repoFolder failed', {
+            self.logger.error('git clone repoDirectory failed', {
                 err: err,
                 stderr: stderr,
                 upstream: self.upstream
@@ -219,8 +219,8 @@ function _processIDLFiles(remote, callback) {
         }
 
         service = serviceName;
-        source = path.join(remotePath, self.idlFolderName, serviceName);
-        destination = path.join(self.idlFolder, serviceName);
+        source = path.join(remotePath, self.idlDirectoryName, serviceName);
+        destination = path.join(self.idlDirectory, serviceName);
 
         shasumFiles(source, onShasums);
 
@@ -276,9 +276,9 @@ function _processIDLFiles(remote, callback) {
 
         GitCommands.addCommitTagAndPushToOrigin({
             files: files,
-            service: remote.folderName,
+            service: remote.directoryName,
             timestamp: self.meta.time(),
-            cwd: self.repositoryFolder,
+            cwd: self.repositoryDirectory,
             logger: self.logger
         }, callback);
 
