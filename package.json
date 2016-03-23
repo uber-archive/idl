@@ -33,7 +33,7 @@
     "pty.js": "^0.3.0",
     "rc": "^1.1.1",
     "read-dir-files": "0.1.1",
-    "read-json": "0.1.0",
+    "read-json": "1.0.3",
     "rimraf": "^2.3.4",
     "run-parallel": "1.1.1",
     "run-series": "1.1.1",
