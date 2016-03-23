@@ -25,7 +25,7 @@ var path = require('path');
 var mkdirp = require('mkdirp');
 var series = require('run-series');
 
-var gitexec = require('./git-process.js').exec;
+var gitexec = require('./git-process').exec;
 
 module.exports = RemoteCache;
 

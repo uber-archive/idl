@@ -52,9 +52,9 @@ var chalk = require('chalk');
 var stringLength = require('string-length');
 var timeAgo = require('time-ago')();
 
-var Git = require('../git-process.js');
+var Git = require('../git-process');
 var ServiceName = require('../service-name');
-var MetaFile = require('../meta-file.js');
+var MetaFile = require('../meta-file');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
 // var getDependencies = require('../get-dependencies');

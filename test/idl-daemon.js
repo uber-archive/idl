@@ -20,7 +20,7 @@
 
 'use strict';
 
-var TestCluster = require('./lib/test-cluster.js');
+var TestCluster = require('./lib/test-cluster');
 var defineFixture = require('./lib/define-fixture');
 var thriftIdl = require('./lib/thrift-idl');
 

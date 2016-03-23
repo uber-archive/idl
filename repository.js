@@ -26,9 +26,9 @@ var mkdirp = require('mkdirp');
 var cpr = require('cpr');
 var deepEqual = require('deep-equal');
 
-var RemoteCache = require('./remote-cache.js');
-var MetaFile = require('./meta-file.js');
-var gitexec = require('./git-process.js').exec;
+var RemoteCache = require('./remote-cache');
+var MetaFile = require('./meta-file');
+var gitexec = require('./git-process').exec;
 var ServiceName = require('./service-name');
 var shasumFiles = require('./hasher').shasumFiles;
 var GitCommands = require('./git-commands');
@@ -51,7 +51,8 @@ function Repository(opts) {
     self.upstream = opts.upstream;
     self.repositoryDirectory = opts.repositoryDirectory;
 
-    self.idlDirectory = path.join(self.repositoryDirectory, self.idlDirectoryName);
+    self.idlDirectory = path.join(self.repositoryDirectory,
+        self.idlDirectoryName);
     self.logger = opts.logger;
 
     self.meta = MetaFile({
