@@ -51,7 +51,8 @@ function Repository(opts) {
     self.upstream = opts.upstream;
     self.repositoryDirectory = opts.repositoryDirectory;
 
-    self.idlDirectory = path.join(self.repositoryDirectory, self.idlDirectoryName);
+    self.idlDirectory = path.join(self.repositoryDirectory,
+        self.idlDirectoryName);
     self.logger = opts.logger;
 
     self.meta = MetaFile({
