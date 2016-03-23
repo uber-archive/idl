@@ -25,7 +25,7 @@
 var parseArgs = require('minimist');
 var process = require('process');
 var assert = require('assert');
-var readJSON = require('read-json');
+var readJSON = require('../read-json');
 var console = require('console');
 var path = require('path');
 var os = require('os');
@@ -34,7 +34,7 @@ var globalTimers = require('timers');
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
-var Repository = require('../repository.js');
+var Repository = require('../repository');
 
 /*eslint no-process-env: 0*/
 var HOME = process.env.HOME;

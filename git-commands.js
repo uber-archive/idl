@@ -23,7 +23,7 @@
 var series = require('run-series');
 var template = require('string-template');
 
-var gitexec = require('./git-process.js').exec;
+var gitexec = require('./git-process').exec;
 
 module.exports.addCommitTagAndPushToOrigin = addCommitTagAndPushToOrigin;
 module.exports.addFiles = addFiles;

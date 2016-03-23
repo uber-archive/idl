@@ -20,5 +20,5 @@
 
 'use strict';
 
-require('./idl-daemon.js');
-require('./idl.js');
+require('./idl-daemon');
+require('./idl');

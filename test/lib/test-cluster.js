@@ -35,8 +35,8 @@ var DebugLogtron = require('debug-logtron');
 var TimeMock = require('time-mock');
 var readDirFiles = require('read-dir-files').read;
 
-var IDLDaemon = require('../../bin/idl-daemon.js');
-var IDL = require('../../bin/idl.js');
+var IDLDaemon = require('../../bin/idl-daemon');
+var IDL = require('../../bin/idl');
 var defineFixture = require('./define-fixture');
 
 var defaultRepos = ['A', 'B', 'C', 'D'].reduce(makeFixture, {});

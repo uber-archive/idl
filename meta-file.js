@@ -20,7 +20,7 @@
 
 'use strict';
 
-var readJSON = require('read-json');
+var readJSON = require('./read-json');
 var fs = require('fs');
 var setImmediate = require('timers').setImmediate;
 
