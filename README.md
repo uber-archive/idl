@@ -186,7 +186,7 @@ Given your application name (`appname`), rc will look in all the obvious places 
   * a local `.idlrc` or the first found looking in `./ ../ ../../ ../../../` etc.
   * `$HOME/.idlrc`
   * `$HOME/.idl/config`
-  * `$HOME/.config/idl
+  * `$HOME/.config/idl`
   * `$HOME/.config/idl/config`
   * `/etc/idlrc`
   * `/etc/idl/config`
