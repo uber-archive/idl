@@ -6,7 +6,7 @@
 
 [![NPM][npm-png]][npm]
 
-A CLI for managing thrift IDL files
+A CLI for managing thrift IDL files.
 
 ## Introduction
 
