@@ -36,7 +36,7 @@ var util = require('util');
 
 var Repository = require('../repository.js');
 
-/*eslint no-process-env: 0*/
+/* eslint no-process-env: 0 */
 var HOME = process.env.HOME;
 
 module.exports = IDLDaemon;
@@ -56,7 +56,7 @@ function main() {
     });
 }
 
-/*eslint no-console: 0, no-process-exit: 0 */
+/* eslint no-console: 0, no-process-exit: 0 */
 function IDLDaemon(opts) {
     if (!(this instanceof IDLDaemon)) {
         return new IDLDaemon(opts);

@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 'use strict';
-/*eslint-disable no-console*/
+/* eslint-disable no-console */
 var assert = require('assert');
 var spawn = require('child_process').spawn;
 var console = require('console');
