@@ -953,7 +953,7 @@ function preauth(shell, command, ignoreList, cb) {
 
     cb = once(cb);
     var args = ['-c', command];
-    var opts = {stdio: 'inherit'};
+    var opts = { stdio: 'inherit' };
     var pa = spawn(shell, args, opts);
     pa.on('error', cb);
     pa.on('exit', cb);

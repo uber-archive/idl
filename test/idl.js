@@ -172,7 +172,9 @@ TestCluster.test('run `idl version`', {
         if (err) {
             assert.ifError(err);
         }
+        /* eslint-disable global-require */
         var expected = require('../package.json').version;
+        /* eslint-enable global-require */
         assert.equal(stdout, expected);
         assert.end();
     });
@@ -257,7 +259,7 @@ TestCluster.test('run `idl publish`', {
         );
         assert.equal(
             results[3].upstream.files[filepath],
-            template(updatedThriftIdlTemplate, {remoteName: 'A'}),
+            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
             'Correct published thrift file for service A (publish run ' +
                 'on changed thrift file)'
         );
@@ -375,13 +377,13 @@ TestCluster.test('run `idl update`', {
         // Remote A and B updated and published. Update run.
         assert.equal(
             data[8].local.idl['github.com'].org.a['service.thrift'],
-            template(updatedThriftIdlTemplate, {remoteName: 'A'}),
+            template(updatedThriftIdlTemplate, { remoteName: 'A' }),
             'Correct thrift A file locally'
         );
 
         assert.equal(
             data[8].local.idl['github.com'].org.b['service.thrift'],
-            template(updatedThriftIdlTemplate, {remoteName: 'B'}),
+            template(updatedThriftIdlTemplate, { remoteName: 'B' }),
             'Correct thrift B file locally'
         );
 
