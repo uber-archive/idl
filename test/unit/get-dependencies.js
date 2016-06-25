@@ -71,8 +71,11 @@ var fixtures = {
 
 test('getServiceDependenciesFromIncludes',
     withFixtures(fixturesPath, fixtures, function t(assert) {
-    getDependencies(
-        path.resolve(__dirname, '../fixtures/idl/github.com/a-team/foo'),
+        getDependencies(
+            path.resolve(__dirname, '../fixtures/idl/github.com/a-team/foo'),
+            onIncludes
+        );
+
         function onIncludes(err, serviceDependencies) {
             if (err) {
                 assert.ifError(err);
@@ -89,5 +92,5 @@ test('getServiceDependenciesFromIncludes',
 
             assert.end();
         }
-    );
-}));
+    })
+);

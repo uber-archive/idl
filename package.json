@@ -47,6 +47,8 @@
     "xtend": "4.0.0"
   },
   "devDependencies": {
+    "eslint": "1.8.0",
+    "eslint-config-perf-standard": "2.1.1",
     "fixtures-fs": "2.0.0",
     "istanbul": "^0.3.5",
     "opn": "^1.0.1",
@@ -54,8 +56,7 @@
     "tape-cluster": "2.0.0",
     "time-mock": "0.1.2",
     "timekeeper": "0.0.5",
-    "uber-licence": "^1.5.1",
-    "uber-standard": "3.6.4"
+    "uber-licence": "^1.5.1"
   },
   "licenses": [
     {
@@ -67,7 +68,7 @@
     "add-licence": "uber-licence",
     "test": "npm run lint -s && npm run cover -s",
     "unit-test": "node test/index.js",
-    "lint": "standard -v",
+    "lint": "eslint . --config .eslintrc",
     "cover": "istanbul cover --report html --print detail -- test/index.js && npm run check-cover -s",
     "check-cover": "istanbul check-coverage --branches=100 --lines=100 --functions=100 || echo 'coverage failed'",
     "view-cover": "opn ./coverage/index.html",

@@ -80,10 +80,10 @@ var minimistOpts = {
     }
 };
 
-/*eslint no-process-env: 0*/
+/* eslint no-process-env: 0 */
 var HOME = process.env.HOME;
 
-/*eslint no-console: 0, no-process-exit:0 */
+/* eslint no-console: 0, no-process-exit:0 */
 module.exports = IDL;
 
 function main() {
@@ -277,7 +277,7 @@ IDL.exec = function exec(string, options, cb) {
 };
 
 function help(helpUrl, cb) {
-    /*eslint-disable max-len*/
+    /* eslint-disable max-len */
     var helpText = [
         'usage: idl --repository=<repo> [--help] [-h]',
         '                    <command> <args>',
@@ -304,7 +304,7 @@ function help(helpUrl, cb) {
 
     helpText = helpText.join('\n');
 
-    /*eslint-enable max-len*/
+    /* eslint-enable max-len */
     setImmediate(cb.bind(this, null, helpText));
 }
 
@@ -953,7 +953,7 @@ function preauth(shell, command, ignoreList, cb) {
 
     cb = once(cb);
     var args = ['-c', command];
-    var opts = {stdio: 'inherit'};
+    var opts = { stdio: 'inherit' };
     var pa = spawn(shell, args, opts);
     pa.on('error', cb);
     pa.on('exit', cb);
