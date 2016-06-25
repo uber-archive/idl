@@ -425,8 +425,12 @@ TestCluster.test('run `idl update` with corrupt meta.json', {
         if (err) {
             assert.ifError(err);
         }
-        var expected = 'Corrupt meta.json file';
-        assert.equal(data[2].stderr, expected, 'Warn user about corrupt meta');
+        var expected = 'Corrupt meta.json file: Unexpected end of input';
+        assert.equal(
+            data[2].stderr.message,
+            expected,
+            'Warn user about corrupt meta'
+        );
         tk.reset();
         assert.end();
     }

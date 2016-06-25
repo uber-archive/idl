@@ -51,6 +51,9 @@ MetaFile.prototype.readFile = function readFile(cb) {
             self._remotes = {};
             return cb(null);
         } else if (err) {
+            if (err.constructor.name === 'SyntaxError') {
+                err.message = 'Corrupt meta.json file: ' + err.message;
+            }
             return cb(err);
         }
 
