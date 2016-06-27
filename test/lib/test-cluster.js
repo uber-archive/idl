@@ -62,7 +62,6 @@ function TestCluster(opts) {
     var self = this;
 
     self.remoteRepos = extend(defaultRepos, opts.remoteRepos || {});
-    // console.log(self.remoteRepos.Z.files.idl['github.com'].org);
     self.repoFixtures = Object.keys(self.remoteRepos)
         .reduce(function getFiles(acc, name) {
             acc[name] = self.remoteRepos[name].files;
