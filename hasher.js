@@ -34,11 +34,19 @@ function sha1(content) {
     return hash.digest('hex');
 }
 
+function relPath(dir) {
+    return '.' + dir.substr(dir.lastIndexOf('/idl/'), dir.length);
+}
+
 function shasumFiles(dir, callback) {
     readDirFiles(dir, 'utf8', onFiles);
 
     function onFiles(err, files) {
         if (err) {
+            if (err.code === 'ENOENT') {
+                err.message = 'Directory not found: ' + relPath(dir);
+                err.path = relPath(dir);
+            }
             return callback(err);
         }
 
