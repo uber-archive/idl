@@ -41,6 +41,7 @@ function addCommitTagAndPushToOrigin(opts, callback) {
 
     series([
         addFiles.bind(ctx, opts.files),
+        removeFiles.bind(ctx, opts.deletedFiles),
         updateFiles.bind(ctx),
         commitWithMessage.bind(ctx, opts.service, opts.version),
         timestampTag.bind(ctx, opts.service, opts.timestamp),
@@ -50,6 +51,17 @@ function addCommitTagAndPushToOrigin(opts, callback) {
 
 function addFiles(files, callback) {
     var command = 'git add ' + files.join(' ');
+    gitexec(command, {
+        cwd: this.cwd,
+        logger: this.logger
+    }, callback);
+}
+
+function removeFiles(files, callback) {
+    if (files.length === 0) {
+        return callback();
+    }
+    var command = 'git rm ' + files.join(' ');
     gitexec(command, {
         cwd: this.cwd,
         logger: this.logger

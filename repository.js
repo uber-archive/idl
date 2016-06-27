@@ -279,6 +279,7 @@ function _processIDLFiles(remote, callback) {
 
         GitCommands.addCommitTagAndPushToOrigin({
             files: files,
+            deletedFiles: [],
             service: remote.directoryName,
             timestamp: self.meta.time(),
             cwd: self.repositoryDirectory,

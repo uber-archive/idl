@@ -51,6 +51,7 @@ var template = require('string-template');
 var chalk = require('chalk');
 var stringLength = require('string-length');
 var timeAgo = require('time-ago')();
+var rimraf = require('rimraf');
 
 var Git = require('../git-process.js');
 var ServiceName = require('../service-name');
@@ -647,6 +648,18 @@ function show(service, cb) {
     }
 }
 
+function getDeletedFiles(currentShasums, newShasums) {
+    var files = [];
+    /* eslint-disable no-restricted-syntax */
+    for (var key in currentShasums) {
+        /* eslint-enable no-restricted-syntax */
+        if (!newShasums.hasOwnProperty(key)) {
+            files.push(key);
+        }
+    }
+    return files;
+}
+
 function publish(cb) {
     var self = this;
     var destination;
@@ -713,7 +726,10 @@ function publish(cb) {
         }
     }
 
-    function onCopied(err, shasums) {
+    function onCopied(err) {
+        if (err && err.message === 'No files to copy') {
+            return rimraf(destination, onCopied);
+        }
         if (err) {
             return cb(err);
         }
@@ -733,8 +749,12 @@ function publish(cb) {
             self.meta.fileName
         ].concat(Object.keys(newShasums).map(getFilepath));
 
+        var deletedFiles = getDeletedFiles(currentShasums, newShasums)
+            .map(getFilepath);
+
         GitCommands.addCommitTagAndPushToOrigin({
             files: files,
+            deletedFiles: deletedFiles,
             service: service,
             timestamp: self.meta.time(),
             cwd: self.repoCacheLocation,

@@ -225,7 +225,9 @@ TestCluster.test('run `idl publish`', {
         publishRemote(cluster, 'A', now + 1000, false),
         publishRemote(cluster, 'A', now + 2000, false),
         updateRemote(cluster, 'A', now + 3000, false),
-        publishRemote(cluster, 'A', now + 4000, false)
+        publishRemote(cluster, 'A', now + 4000, false),
+        deletedRemote(cluster, 'A', now + 5000, false),
+        publishRemote(cluster, 'A', now + 6000, false)
     ], onResults);
 
     function onResults(err, results) {
@@ -267,6 +269,17 @@ TestCluster.test('run `idl publish`', {
             results[3].upstream.meta.version,
             now + 4000,
             'Correct version (version changed) (publish run on changed ' +
+                'thrift file)'
+        );
+        assert.false(
+            results[5].upstream.files.hasOwnProperty(filepath),
+            'Unpublished thrift file for service A (publish run ' +
+                'on deleted thrift file)'
+        );
+        assert.equal(
+            results[5].upstream.meta.version,
+            now + 6000,
+            'Correct version (version changed) (publish run on deleted ' +
                 'thrift file)'
         );
 
@@ -487,6 +500,27 @@ function updateRemote(cluster, remoteName, time, inspectLocal) {
             remoteName: remoteName
         })
     };
+
+    return function update(callback) {
+        tk.freeze(new Date(time));
+        cluster.updateRemote(
+            remoteName,
+            fixtures,
+            inspectBoth(cluster, inspectLocal, callback)
+        );
+    };
+}
+
+function deletedRemote(cluster, remoteName, time, inspectLocal) {
+    var fixtures = {
+        idl: {
+            'github.com': {
+                'org': {}
+            }
+        }
+    };
+
+    fixtures.idl['github.com'].org[remoteName.toLowerCase()] = {};
 
     return function update(callback) {
         tk.freeze(new Date(time));
