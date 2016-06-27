@@ -288,6 +288,59 @@ TestCluster.test('run `idl publish`', {
     }
 });
 
+TestCluster.test('run `idl publish non-existent`', {
+    fetchRemotes: false,
+    remoteRepos: {
+        'Z': {
+            gitUrl: 'git@github.com:org/z',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'org': {
+                            'a': {
+                                'service.thrift': thriftIdl('A')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}, function t(cluster, assert) {
+
+    var now = Date.now();
+
+    series([
+        publishRemote(cluster, 'A', now + 1000, false),
+        publishRemote(cluster, 'Z', now + 2000, false)
+    ], onResults);
+
+    function onResults(err, results) {
+        if (err) {
+            assert.ifError(err);
+        }
+
+        var filepath = 'idl/github.com/org/z/service.thrift';
+        assert.false(
+            results[1].upstream.files.hasOwnProperty(filepath),
+            'No published thrift file for service Z'
+        );
+        assert.equal(
+            results[1].upstream.meta.version,
+            now + 1000,
+            'Correct version (unchanged)'
+        );
+        assert.equal(
+            results[1].stderr.message,
+            'Directory not found: ./idl/github.com/org/z'
+        );
+
+        tk.reset();
+        assert.end();
+    }
+});
+
 TestCluster.test('run `idl update`', {
     fetchRemotes: false
 }, function t(cluster, assert) {
