@@ -58,7 +58,7 @@ var ServiceName = require('../service-name');
 var MetaFile = require('../meta-file.js');
 var sha1 = require('../hasher').sha1;
 var shasumFiles = require('../hasher').shasumFiles;
-// var getDependencies = require('../get-dependencies');
+var getDependencies = require('../get-dependencies');
 var common = require('../common');
 var pkg = require('../package.json');
 
@@ -196,6 +196,7 @@ function resolveCwd(cwd, cb) {
     }
 }
 
+/* eslint-disable max-statements */
 function IDL(opts) {
     if (!(this instanceof IDL)) {
         return new IDL(opts);
@@ -216,6 +217,9 @@ function IDL(opts) {
     self.preauthShell = opts.preauthShell || 'sh';
     self.preauthIgnore = opts.preauthIgnore || [];
     self.helpUrl = opts.helpUrl;
+
+    // List of IDLs already fetched when fetching dependencies.
+    self.fetched = [];
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
@@ -248,6 +252,7 @@ function IDL(opts) {
         twoFactor: opts.twoFactor
     });
 }
+/* eslint-enable max-statements */
 
 IDL.prototype.help = help;
 IDL.prototype.version = version;
@@ -571,40 +576,34 @@ function fetch(service, cb) {
         if (err) {
             return cb(err);
         }
-
-        clientMetaFile.save(cb);
+        clientMetaFile.save(onClientMetaSaved);
     }
 
-    // function onClientMetaSaved(err) {
-    //     if (err) {
-    //         return cb(err);
-    //     }
-    //     console.log('===>', path.resolve(self.cwd, service));
-    //     getDependencies(path.resolve(self.cwd, service), onDependencies)
+    function onClientMetaSaved(err) {
+        if (err) {
+            return cb(err);
+        }
+        var idlDir = path.join(self.cwd, self.idlDirectory);
+        getDependencies(idlDir, service, onDependencies);
+    }
 
-    // }
+    function onDependencies(err, dependencies) {
+        if (err) {
+            return cb(err);
+        }
+        series(dependencies.map(makeFetcher), cb);
+    }
 
-    // function onDependencies(err, dependencies) {
-    //     if (err) {
-    //         return cb(err);
-    //     }
-
-    //     console.log(service, dependencies);
-
-    //     return cb();
-
-    //     var dependenciesFetchers = Object.keys(dependencies)
-    //         .map(makeFetcher);
-
-    //     function makeFetcher(dependency) {
-    //         return function fetchDependencyThunk(callback) {
-    //             fetch(dependency, callback);
-    //         };
-    //     }
-
-    //     series(dependenciesFetchers, cb);
-    // }
-
+    function makeFetcher(dependency) {
+        return function fetchDependencyThunk(callback) {
+            if (self.fetched.indexOf(dependency) === -1) {
+                self.fetched.push(dependency);
+                self.fetch(dependency, callback);
+            } else {
+                callback();
+            }
+        };
+    }
 }
 
 function show(service, cb) {

@@ -23,7 +23,6 @@
 var readDirFiles = require('read-dir-files').read;
 var traverse = require('traverse');
 var path = require('path');
-var dirname = path.dirname;
 
 module.exports = getIncludes;
 
@@ -38,10 +37,7 @@ function parseIncludes(thriftFile) {
     return includes;
 }
 
-function getIncludes(directory, callback) {
-    var thriftDir = dirname(dirname(dirname(directory)));
-    var currentModule = path.relative(thriftDir, directory);
-
+function getIncludes(thriftDir, service, callback) {
     resolveAllInstalledDependencies(thriftDir, onDependencyMap);
 
     function onDependencyMap(err, dependencyMap) {
@@ -49,7 +45,7 @@ function getIncludes(directory, callback) {
             return callback(err);
         }
 
-        callback(null, dependencyMap[currentModule] || []);
+        callback(null, dependencyMap[service] || []);
     }
 }
 
