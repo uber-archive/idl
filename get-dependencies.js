@@ -83,9 +83,13 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
                 dir,
                 relativeInclude
             );
+
+            // Ignore any includes outside the ./idl/ folder
+            // See: https://github.com/uber/idl/pull/51
             if (absoluteInclude.indexOf(thriftDir) !== 0) {
                 return undefined;
             }
+
             return path.dirname(
                 absoluteInclude.substr(
                     thriftDir.length + 1,
