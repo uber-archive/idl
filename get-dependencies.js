@@ -49,6 +49,8 @@ function getIncludes(thriftDir, service, callback) {
     }
 }
 
+function removeUndef(n){ return n != undefined }
+
 function resolveAllInstalledDependencies(thriftDir, callback) {
     readDirFiles(thriftDir, 'utf8', onReadFiles);
 
@@ -69,7 +71,8 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
             var dir = this.path.slice(0, this.path.length - 1).join('/');
             var includes = parseIncludes(value);
             if (includes.length > 0) {
-                memo[dir] = [].concat(includes.map(pathToServiceName));
+                memo[dir] = [].concat(includes.map(pathToServiceName))
+                    .filter(removeUndef);
             }
         }
         return memo;
@@ -80,6 +83,9 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
                 dir,
                 relativeInclude
             );
+            if (absoluteInclude.indexOf(thriftDir) !== 0) {
+                return undefined;
+            }
             return path.dirname(
                 absoluteInclude.substr(
                     thriftDir.length + 1,
