@@ -215,6 +215,88 @@ TestCluster.test('run `idl fetch`', {
     }
 });
 
+/* eslint-disable */
+var nyuckThrift = fs.readFileSync(__dirname + '/nyuck.thrift', 'utf8');
+var joeThrift = fs.readFileSync(__dirname + '/joe.thrift', 'utf8');
+
+TestCluster.test('run `idl fetch including dependencies`', {
+    remoteRepos: {
+        'stooges': {
+            gitUrl: 'git@github.com:footeam/stooges',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'footeam': {
+                            'stooges': {
+                                'nyuck.thrift': nyuckThrift
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        'joe': {
+            gitUrl: 'git@github.com:barteam/joe',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'barteam': {
+                            'joe': {
+                                'joe.thrift': joeThrift
+                            }
+                        },
+                        'footeam': {
+                            'stooges': {
+                                'nyuck.thrift': nyuckThrift
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}, function t(cluster, assert) {
+
+    var now = Date.now();
+
+    var fetch = fetchRemote(
+        cluster,
+        'github.com/barteam/joe',
+        now + 1000,
+        true
+    );
+
+    fetch(onResults);
+
+    function onResults(err, results) {
+        if (err) {
+            assert.ifError(err);
+        }
+
+        assert.equal(
+            results.local.idl['github.com'].barteam.joe['joe.thrift'],
+            results.upstream.files['idl/github.com/barteam/joe/joe.thrift'],
+            'Fetched the requested IDL file for barteam/joe'
+        );
+
+        assert.equal(
+            results.local.idl['github.com'].footeam.stooges['nyuck.thrift'],
+            results.upstream.files['idl/github.com/footeam/stooges/nyuck.thrift'],
+            'Fetched the dependency for joe.thrift'
+        );
+
+        assert.equal(
+            results.local.idl['meta.json'].time,
+            results.upstream.meta.remotes['github.com/barteam/joe'].time
+        );
+
+        tk.reset();
+        assert.end();
+    }
+});
+
 TestCluster.test('run `idl publish`', {
     fetchRemotes: false
 }, function t(cluster, assert) {

@@ -23,7 +23,6 @@
 var readDirFiles = require('read-dir-files').read;
 var traverse = require('traverse');
 var path = require('path');
-var dirname = path.dirname;
 
 module.exports = getIncludes;
 
@@ -38,10 +37,7 @@ function parseIncludes(thriftFile) {
     return includes;
 }
 
-function getIncludes(directory, callback) {
-    var thriftDir = dirname(dirname(dirname(directory)));
-    var currentModule = path.relative(thriftDir, directory);
-
+function getIncludes(thriftDir, service, callback) {
     resolveAllInstalledDependencies(thriftDir, onDependencyMap);
 
     function onDependencyMap(err, dependencyMap) {
@@ -49,9 +45,11 @@ function getIncludes(directory, callback) {
             return callback(err);
         }
 
-        callback(null, dependencyMap[currentModule] || []);
+        callback(null, dependencyMap[service] || []);
     }
 }
+
+function removeUndef(n){ return n != undefined }
 
 function resolveAllInstalledDependencies(thriftDir, callback) {
     readDirFiles(thriftDir, 'utf8', onReadFiles);
@@ -73,7 +71,8 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
             var dir = this.path.slice(0, this.path.length - 1).join('/');
             var includes = parseIncludes(value);
             if (includes.length > 0) {
-                memo[dir] = [].concat(includes.map(pathToServiceName));
+                memo[dir] = [].concat(includes.map(pathToServiceName))
+                    .filter(removeUndef);
             }
         }
         return memo;
@@ -84,6 +83,13 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
                 dir,
                 relativeInclude
             );
+
+            // Ignore any includes outside the ./idl/ folder
+            // See: https://github.com/uber/idl/pull/51
+            if (absoluteInclude.indexOf(thriftDir) !== 0) {
+                return undefined;
+            }
+
             return path.dirname(
                 absoluteInclude.substr(
                     thriftDir.length + 1,
