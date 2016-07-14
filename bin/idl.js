@@ -204,10 +204,6 @@ function IDL(opts) {
 
     var self = this;
 
-    if (!opts.repository) {
-        throw new Error('--repository is required');
-    }
-
     self.remainder = opts._;
     self.command = self.remainder[0];
     self.repository = opts.repository;
@@ -331,6 +327,10 @@ function processArgs(cb) {
 
     if (self.command === 'init') {
         return self.init(cb);
+    }
+
+    if (!self.repository) {
+        return cb(new Error('--repository is required'));
     }
 
     preauth(
