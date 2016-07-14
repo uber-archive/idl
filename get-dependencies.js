@@ -49,7 +49,9 @@ function getIncludes(thriftDir, service, callback) {
     }
 }
 
-function removeUndef(n){ return n != undefined }
+function removeUndef(n) {
+    return n !== undefined;
+}
 
 function resolveAllInstalledDependencies(thriftDir, callback) {
     readDirFiles(thriftDir, 'utf8', onReadFiles);
