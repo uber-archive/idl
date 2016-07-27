@@ -424,7 +424,14 @@ function init(cb) {
             serviceName: pascalCase(name)
         });
 
-        fs.writeFile(filePath, contents, 'utf8', cb);
+        fs.writeFile(filePath, contents, 'utf8', done);
+
+        function done(err) {
+            if (err) {
+                return cb(err);
+            }
+            cb(null, 'Created thrift file: ' + filePath);
+        }
     }
 }
 
@@ -591,7 +598,18 @@ function fetch(service, cb) {
         if (err) {
             return cb(err);
         }
-        series(dependencies.map(makeFetcher), cb);
+        series(dependencies.map(makeFetcher), done);
+    }
+
+    function done(err) {
+        if (err) {
+            return cb(err);
+        }
+        cb(null, 'Fetched to ' + path.join(
+            self.cwd,
+            self.idlDirectory,
+            service
+        ));
     }
 
     function makeFetcher(dependency) {
@@ -758,11 +776,18 @@ function publish(cb) {
             timestamp: self.meta.time(),
             cwd: self.repoCacheLocation,
             logger: self.logger
-        }, cb);
+        }, done);
 
         function getFilepath(filename) {
             return path.join(destination, filename);
         }
+    }
+
+    function done(err) {
+        if (err) {
+            return cb(err);
+        }
+        cb(null, 'Published ' + source);
     }
 }
 
@@ -785,14 +810,21 @@ function update(cb) {
         }
 
         var remotes = Object.keys(clientMetaFile.toJSON().remotes);
-        series(remotes.map(function buildThunk(remote) {
+        series(remotes.map(buildThunk), onResults);
+
+        function buildThunk(remote) {
             return self.fetch.bind(self, remote);
-        }), function onResults(updateErr, results) {
+        }
+
+        function onResults(updateErr, results) {
             if (updateErr) {
                 return cb(updateErr);
             }
-            cb();
-        });
+            cb(null, 'Updated all IDL files in ' + path.join(
+                self.cwd,
+                self.idlDirectory
+            ));
+        }
     }
 }
 
