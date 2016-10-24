@@ -21,7 +21,7 @@
 'use strict';
 
 var readJSON = require('read-json');
-var fs = require('fs');
+var fs = require('graceful-fs');
 var setImmediate = require('timers').setImmediate;
 
 module.exports = MetaFile;
