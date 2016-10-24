@@ -30,7 +30,7 @@ var timeAgo = require('time-ago')();
 var stringLength = require('string-length');
 var textTable = require('text-table');
 var chalk = require('chalk');
-var fs = require('fs');
+var fs = require('graceful-fs');
 
 var thriftIdl = require('./lib/thrift-idl');
 var TestCluster = require('./lib/test-cluster.js');

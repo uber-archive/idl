@@ -22,7 +22,7 @@
 
 var tape = require('tape');
 var path = require('path');
-var fs = require('fs');
+var fs = require('graceful-fs');
 var series = require('run-series');
 var parallel = require('run-parallel');
 var exec = require('child_process').exec;
