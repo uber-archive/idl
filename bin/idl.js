@@ -287,7 +287,7 @@ function help(helpUrl, cb) {
         'Where <command> is one of:',
         '  - init           Scaffold simple IDL file at correct path for a new service project',
         '  - list           list service IDLs available in the registry',
-        '  - fetch <name>   fetch IDLs for a service and place in the current project',
+        '  - fetch <name>   fetch and update IDLs for a service and place in the current project',
         '  - show <show>    print the IDLs for a service on stdout',
         '  - publish        manually publish IDLs for a service to the registry',
         '  - update         update any "installed" service IDLs to the latest versions',
