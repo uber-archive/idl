@@ -158,12 +158,21 @@ MetaFile.prototype.toJSON = function toJSON() {
         json.shasums = self._shasums;
     }
 
-    if (self._remotes) {
-        json.remotes = self._remotes;
+    if (self._remotes) { // sort remotes to simplify diffs / reviews
+        json.remotes = sortObject(self._remotes);
     }
 
     return json;
 };
+
+// sort object properties by their names in lexicographical order
+function sortObject(unsorted) {
+    var sorted = {};
+    Object.keys(unsorted).sort().forEach(function(key) {
+        sorted[key] = unsorted[key];
+    });
+    return sorted;
+}
 
 MetaFile.prototype.toJSONString = function toJSONString() {
     var self = this;
