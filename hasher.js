@@ -50,18 +50,23 @@ function shasumFiles(dir, callback) {
             return callback(err);
         }
 
+        var filteredFiles = {};
+
         traverse(files).forEach(function filter(value) {
-            if (this.key && !fileFilter(this.key)) {
-                this.remove();
+            if (!this.isLeaf) {
+                return;
+            }
+            if (this.key && fileFilter(this.key)) {
+                filteredFiles[this.path.join("/")] = value;
             }
         });
 
-        var shasums = Object.keys(files).reduce(hashFile, {});
+        var shasums = Object.keys(filteredFiles).reduce(hashFile, {});
 
         callback(null, shasums);
 
         function hashFile(memo, filename) {
-            memo[filename] = sha1(files[filename]);
+            memo[filename] = sha1(filteredFiles[filename]);
             return memo;
         }
     }
