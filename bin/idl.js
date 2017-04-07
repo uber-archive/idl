@@ -518,8 +518,8 @@ function fetch(service, cb) {
             return cb(err);
         }
 
-        var alreadyFetched = !!clientMetaFile.toJSON().remotes[service];
-        var existsInRegistry = !!self.meta.toJSON().remotes[service];
+        var alreadyFetched = findService(clientMetaFile.toJSON(), service);
+        var existsInRegistry = findService(self.meta.toJSON(), service);
 
         if (!existsInRegistry) {
             cb(UnknownServiceError({
@@ -532,6 +532,17 @@ function fetch(service, cb) {
         } else {
             self.update(onUpdate);
         }
+    }
+
+    function findService(json, service) {
+        var path = service.split('/');
+        for (var i = path.length; i >= 0; i--) {
+            var fetched = json.remotes[path.slice(0, i).join('/')];
+            if (fetched) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function onUpdate(err) {
