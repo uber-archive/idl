@@ -370,124 +370,6 @@ TestCluster.test('run `idl publish`', {
     }
 });
 
-TestCluster.test('run `idl publish nested folders`', {
-    fetchRemotes: false,
-    remoteRepos: {
-        'S': {
-            gitUrl: 'git@github.com:org/s',
-            branch: 'master',
-            files: {
-                'idl': {
-                    'github.com': {
-                        'org': {
-                            's': {
-                                'nestedFolder': {
-                                    'nestedService.thrift': thriftIdl('A')
-                                },
-                                'service.thrift': thriftIdl('A')
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}, function t(cluster, assert) {
-
-    var now = Date.now();
-    debugger;
-    series([
-        publishRemote(cluster, 'S', now + 1000, false),
-        publishRemote(cluster, 'S', now + 2000, false),
-        updateRemote(cluster, 'S', now + 3000, false, true),
-        publishRemote(cluster, 'S', now + 4000, false),
-        deletedRemote(cluster, 'S', now + 5000, false),
-        publishRemote(cluster, 'S', now + 6000, false)
-    ], onResults);
-
-    function onResults(err, results) {
-        debugger;
-        if (err) {
-            assert.ifError(err);
-        }
-
-        var filepath = 'idl/github.com/org/s/service.thrift';
-        var nestedFilepath = 'idl/github.com/org/s/nestedFolder/nestedService.thrift';
-        assert.equal(
-            results[0].upstream.files[filepath],
-            thriftIdl('A'),
-            'Correct published thrift file for service S (published ' +
-                'for the first time)'
-        );
-        assert.equal(
-            results[0].upstream.files[nestedFilepath],
-            thriftIdl('A'),
-            'Correct published thrift file (nested) for service S (published ' +
-                'for the first time)'
-        );
-        assert.equal(
-            results[0].upstream.meta.version,
-            now + 1000,
-            'Correct version (published for the first time)'
-        );
-        assert.equal(
-            results[1].upstream.files[filepath],
-            thriftIdl('A'),
-            'Correct published thrift file for service S (publish run ' +
-                'again on unchanged thrift file)'
-        );
-        assert.equal(
-            results[1].upstream.files[nestedFilepath],
-            thriftIdl('A'),
-            'Correct published thrift file (nested) for service S (publish run ' +
-                'again on unchanged thrift file)'
-        );
-        assert.equal(
-            results[1].upstream.meta.version,
-            now + 1000,
-            'Correct version (version unchanged) (publish run again ' +
-                'on unchanged thrift file)'
-        );
-        assert.equal(
-            results[3].upstream.files[filepath],
-            template(updatedThriftIdlTemplate, { remoteName: 'S' }),
-            'Correct published thrift file for service S (publish run ' +
-                'on changed thrift file)'
-        );
-        assert.equal(
-            results[3].upstream.files[nestedFilepath],
-            template(updatedThriftIdlTemplate, { remoteName: 'S' }),
-            'Correct published thrift file for service S (publish run ' +
-                'on changed thrift file)'
-        );
-        assert.equal(
-            results[3].upstream.meta.version,
-            now + 4000,
-            'Correct version (version changed) (publish run on changed ' +
-                'thrift file)'
-        );
-        assert.false(
-            results[5].upstream.files.hasOwnProperty(filepath),
-            'Unpublished thrift file for service S (publish run ' +
-                'on deleted thrift file)'
-        );
-        assert.false(
-            results[5].upstream.files.hasOwnProperty(nestedFilepath),
-            'Unpublished thrift file for service S (publish run ' +
-                'on deleted thrift file)'
-        );
-        assert.equal(
-            results[5].upstream.meta.version,
-            now + 6000,
-            'Correct version (version changed) (publish run on deleted ' +
-                'thrift file)'
-        );
-
-        tk.reset();
-        assert.end();
-    }
-});
-
 TestCluster.test('run `idl publish non-existent`', {
     fetchRemotes: false,
     remoteRepos: {
@@ -739,7 +621,7 @@ function publishRemote(cluster, remoteName, time, inspectLocal) {
     };
 }
 
-function updateRemote(cluster, remoteName, time, inspectLocal, nested) {
+function updateRemote(cluster, remoteName, time, inspectLocal) {
     var fixtures = {
         idl: {
             'github.com': {
@@ -748,24 +630,11 @@ function updateRemote(cluster, remoteName, time, inspectLocal, nested) {
         }
     };
 
-    if (nested) {
-        fixtures.idl['github.com'].org[remoteName.toLowerCase()] = {
-            'service.thrift': template(updatedThriftIdlTemplate, {
-                remoteName: remoteName
-            }),
-            nestedFolder: {
-                'nestedService.thrift': template(updatedThriftIdlTemplate, {
-                    remoteName: remoteName
-                })
-            }
-        };
-    } else {
-        fixtures.idl['github.com'].org[remoteName.toLowerCase()] = {
-            'service.thrift': template(updatedThriftIdlTemplate, {
-                remoteName: remoteName
-            })
-        };
-    }
+    fixtures.idl['github.com'].org[remoteName.toLowerCase()] = {
+        'service.thrift': template(updatedThriftIdlTemplate, {
+            remoteName: remoteName
+        })
+    };
 
     return function update(callback) {
         tk.freeze(new Date(time));
