@@ -22,7 +22,7 @@
 
 var TestCluster = require('./lib/test-cluster.js');
 var defineFixture = require('./lib/define-fixture');
-var thriftIdl = require('./lib/thrift-idl');
+var thriftIdl = require('./lib/thrift-idl').thriftIdl;
 
 TestCluster.test('run the idl-daemon', {
 }, function t(cluster, assert) {
