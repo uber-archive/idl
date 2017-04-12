@@ -22,7 +22,10 @@
 
 var template = require('string-template');
 
-module.exports = thriftIdl;
+module.exports = {
+    thriftIdl: thriftIdl,
+    thriftIdlWithIncludes: thriftIdlWithIncludes
+};
 
 function thriftIdl(serviceName) {
     var idlTemplate = [
@@ -34,4 +37,26 @@ function thriftIdl(serviceName) {
     return template(idlTemplate, {
         serviceName: serviceName
     });
+}
+
+function thriftIdlWithIncludes(serviceName, includes) {
+    var idlTemplate = [
+        '{includes}',
+        'service {serviceName} {',
+        '    i32 echo(1:i32 value)',
+        '}'
+    ].join('\n') + '\n';
+
+    return template(idlTemplate, {
+        serviceName: serviceName,
+        includes: includes.length > 0 ? getIncludesTemplate(includes) : ''
+    });
+}
+
+function getIncludesTemplate(includes) {
+    var includeTemplate = [];
+    for (var i = 0; i < includes.length; i++) {
+        includeTemplate.push('include {' + i + '}')
+    }
+    return template(includeTemplate.join('\n') + '\n', includes);
 }

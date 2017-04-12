@@ -20,7 +20,7 @@
 
 'use strict';
 
-var thriftIdl = require('./thrift-idl');
+var thriftIdl = require('./thrift-idl').thriftIdl;
 
 module.exports = defineFixture;
 
