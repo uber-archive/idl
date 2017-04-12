@@ -32,7 +32,9 @@ var textTable = require('text-table');
 var chalk = require('chalk');
 var fs = require('graceful-fs');
 
-var thriftIdl = require('./lib/thrift-idl');
+var thriftIdl = require('./lib/thrift-idl').thriftIdl;
+var thriftIdlWithIncludes = require('./lib/thrift-idl').thriftIdlWithIncludes;
+
 var TestCluster = require('./lib/test-cluster.js');
 
 var updatedThriftIdlTemplate = '' +
@@ -481,6 +483,132 @@ TestCluster.test('run `idl publish nested folders`', {
             now + 6000,
             'Correct version (version changed) (publish run on deleted ' +
                 'thrift file)'
+        );
+
+        tk.reset();
+        assert.end();
+    }
+});
+
+TestCluster.test('run `idl publish nested folders`', {
+    fetchRemotes: false,
+    remoteRepos: {
+        'S': {
+            gitUrl: 'git@github.com:org/s',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'org': {
+                            's': {
+                                'nestedFolder': {
+                                    'nestedService.thrift': thriftIdl('S')
+                                },
+                                'service.thrift': thriftIdl('S')
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        'T': {
+            gitUrl: 'git@github.com:org/t',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'org': {
+                            't': {
+                                'service.thrift': thriftIdlWithIncludes(
+                                    'T',
+                                    [
+                                        '../s/nestedFolder/nestedService.thrift'
+                                    ]
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        'U': {
+            gitUrl: 'git@github.com:org/u',
+            branch: 'master',
+            files: {
+                'idl': {
+                    'github.com': {
+                        'org': {
+                            'u': {
+                                'service.thrift': thriftIdlWithIncludes(
+                                    'U',
+                                    [
+                                        '../t/service.thrift'
+                                    ]
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}, function t(cluster, assert) {
+
+    var now = Date.now();
+    debugger;
+    series([
+        publishRemote(cluster, 'S', now + 1000, false),
+        updateRemote(cluster, 'S', now + 2000, false, true),
+        publishRemote(cluster, 'S', now + 3000, false),
+        publishRemote(cluster, 'T', now + 4000, false),
+        publishRemote(cluster, 'U', now + 5000, false),
+        fetchRemote(cluster, 'github.com/org/u', now + 6000, true)
+    ], onResults);
+
+    function onResults(err, results) {
+        debugger;
+        if (err) {
+            assert.ifError(err);
+        }
+
+        var filepath = 'idl/github.com/org/s/service.thrift';
+        var nestedFilepath = 'idl/github.com/org/s/nestedFolder/nestedService.thrift';
+        assert.equal(
+            results[0].upstream.files[filepath],
+            thriftIdl('S'),
+            'Correct published thrift file for service S (published ' +
+                'for the first time)'
+        );
+        assert.equal(
+            results[0].upstream.files[nestedFilepath],
+            thriftIdl('S'),
+            'Correct published thrift file (nested) for service S (published ' +
+                'for the first time)'
+        );
+        assert.equal(
+            results[0].upstream.meta.version,
+            now + 1000,
+            'Correct version (published for the first time)'
+        );
+
+        assert.equal(
+            results[3].upstream.files['idl/github.com/org/t/service.thrift'],
+            thriftIdlWithIncludes('T', ['../s/nestedFolder/nestedService.thrift']),
+            'Correct published thrift file for service T (published ' +
+                'for the first time)'
+        );
+
+        assert.equal(
+            results[4].upstream.files['idl/github.com/org/u/service.thrift'],
+            thriftIdlWithIncludes('U', ['../t/service.thrift']),
+            'Correct published thrift file for service T (published ' +
+                'for the first time)'
+        );
+
+        assert.equal(
+            results[5].local.idl['github.com'].org.u['service.thrift'],
+            results[5].upstream.files['idl/github.com/org/u/service.thrift'],
+            'Correct file content for service U'
         );
 
         tk.reset();
