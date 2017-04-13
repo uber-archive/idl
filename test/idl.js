@@ -397,7 +397,6 @@ TestCluster.test('run `idl publish nested folders`', {
 }, function t(cluster, assert) {
 
     var now = Date.now();
-    debugger;
     series([
         publishRemote(cluster, 'S', now + 1000, false),
         publishRemote(cluster, 'S', now + 2000, false),
@@ -408,7 +407,6 @@ TestCluster.test('run `idl publish nested folders`', {
     ], onResults);
 
     function onResults(err, results) {
-        debugger;
         if (err) {
             assert.ifError(err);
         }
@@ -555,7 +553,6 @@ TestCluster.test('run `idl publish nested folders`', {
 }, function t(cluster, assert) {
 
     var now = Date.now();
-    debugger;
     series([
         publishRemote(cluster, 'S', now + 1000, false),
         updateRemote(cluster, 'S', now + 2000, false, true),
@@ -566,7 +563,6 @@ TestCluster.test('run `idl publish nested folders`', {
     ], onResults);
 
     function onResults(err, results) {
-        debugger;
         if (err) {
             assert.ifError(err);
         }
