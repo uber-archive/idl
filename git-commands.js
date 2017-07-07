@@ -44,7 +44,7 @@ function addCommitTagAndPushToOrigin(opts, callback) {
         removeFiles.bind(ctx, opts.deletedFiles),
         updateFiles.bind(ctx),
         commitWithMessage.bind(ctx, opts.service, opts.version),
-        timestampTag.bind(ctx, opts.service, opts.timestamp),
+        // timestampTag.bind(ctx, opts.service, opts.timestamp),
         pushToOriginWithTags.bind(ctx)
     ], callback);
 }
