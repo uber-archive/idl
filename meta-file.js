@@ -168,7 +168,7 @@ MetaFile.prototype.toJSON = function toJSON() {
 // sort object properties by their names in lexicographical order
 function sortObject(unsorted) {
     var sorted = {};
-    Object.keys(unsorted).sort().forEach(function(key) {
+    Object.keys(unsorted).sort().forEach(function eachKey(key) {
         sorted[key] = unsorted[key];
     });
     return sorted;
