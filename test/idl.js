@@ -70,7 +70,7 @@ TestCluster.test('run `idl init`', {
         ].join('\n');
 
         assert.equal(
-            local.idl['github.com'].uber.idl['idl.thrift'],
+            local.idl['github.com']['uber-node'].idl['idl.thrift'],
             expected,
             'Correct IDL file contents at the correct path'
         );

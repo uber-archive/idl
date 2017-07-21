@@ -336,12 +336,12 @@ This project is not done yet:
 
 ## MIT Licensed
 
-  [build-png]: https://secure.travis-ci.org/uber/idl.png
-  [build]: https://travis-ci.org/uber/idl
-  [cover-png]: https://coveralls.io/repos/uber/idl/badge.png
-  [cover]: https://coveralls.io/r/uber/idl
-  [dep-png]: https://david-dm.org/uber/idl.png
-  [dep]: https://david-dm.org/uber/idl
+  [build-png]: https://secure.travis-ci.org/uber-node/idl.png
+  [build]: https://travis-ci.org/uber-node/idl
+  [cover-png]: https://coveralls.io/repos/uber-node/idl/badge.png
+  [cover]: https://coveralls.io/r/uber-node/idl
+  [dep-png]: https://david-dm.org/uber-node/idl.png
+  [dep]: https://david-dm.org/uber-node/idl
   [npm-png]: https://nodei.co/npm/idl.png?stars&downloads
   [npm]: https://nodei.co/npm/idl
   [dominictarr/rc]: https://github.com/dominictarr/rc
