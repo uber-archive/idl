@@ -1,4 +1,10 @@
-# v3.1.8
+
+# unreleased
+
+- No changes yet.
+
+
+# v3.1.8 (2017-07-24)
 
 - Uses shallow clone and fetch to expedite all IDL commands that interact with
   their IDL registry. (@kriskowal)
