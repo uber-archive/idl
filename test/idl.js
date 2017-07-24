@@ -70,7 +70,7 @@ TestCluster.test('run `idl init`', {
         ].join('\n');
 
         assert.equal(
-            local.idl['github.com'].uber.idl['idl.thrift'],
+            local.idl['github.com']['uber-node'].idl['idl.thrift'],
             expected,
             'Correct IDL file contents at the correct path'
         );
@@ -802,7 +802,6 @@ TestCluster.test('run `idl update`', {
 
 TestCluster.test('run `idl update` with corrupt meta.json', {
 }, function t(cluster, assert) {
-
     var now = Date.now();
 
     series([
@@ -815,9 +814,9 @@ TestCluster.test('run `idl update` with corrupt meta.json', {
         if (err) {
             assert.ifError(err);
         }
-        var expected = 'Corrupt meta.json file: Unexpected end of input';
-        assert.equal(
-            data[2].stderr.message,
+        var expected = 'Corrupt meta.json file: Unexpected end of ';
+        assert.ok(
+            data[2].stderr.message.lastIndexOf(expected, 0) === 0,
             expected,
             'Warn user about corrupt meta'
         );
