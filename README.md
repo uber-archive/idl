@@ -331,8 +331,10 @@ This project is not done yet:
 
 ## Contributors
 
- - Raynos (Jake Verbaten)
  - malandrew (Andrew de Andrade)
+ - Raynos (Jake Verbaten)
+ - kriskowal (Kris Kowal)
+ - prashantv (Prashant Varanasi)
 
 ## MIT Licensed
 

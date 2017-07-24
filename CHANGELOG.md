@@ -1,6 +1,12 @@
-# unreleased
+# v3.1.8
 
-- No changes yet.
+- Uses shallow clone and fetch to expedite all IDL commands that interact with
+  their IDL registry. (@kriskowal)
+
+
+# un-numbered release on master
+
+- Filters yab files from IDL lists. (@prashantv)
 
 
 # v3.1.7
@@ -10,6 +16,7 @@
 
 
 # v3.1.6
+
 
 # v3.1.5
 
