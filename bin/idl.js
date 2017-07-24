@@ -885,7 +885,7 @@ function cloneRepository(cb) {
 
         var cwd = path.dirname(self.repoCacheLocation);
 
-        var command = 'git clone ' +
+        var command = 'git clone --depth 1 ' +
             self.repository + ' ' +
             self.repoCacheLocation;
         self.git(command, {
@@ -899,7 +899,7 @@ function pullRepository(cb) {
     var self = this;
 
     var cwd = self.repoCacheLocation;
-    var command = 'git fetch --all';
+    var command = 'git fetch -depth 1 ';
     self.git(command, {
         cwd: cwd,
         ignoreStderr: true
