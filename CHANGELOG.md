@@ -3,6 +3,7 @@
 
 - Fixes a bug where IDL would fail to update the cache repository. (@dnathe4th)
 - Fixes a bug in displaying time since last IDL package sync. (@pvonr)
+- Stops pushing timestamp tags.
 
 
 # v3.1.8 (2017-07-24)
