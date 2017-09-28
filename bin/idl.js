@@ -223,7 +223,7 @@ function IDL(opts) {
 
     self.logger = opts.logger || DebugLogtron('idl', opts.logOpts || {});
 
-    self.repoHash = sha1(self.repository);
+    self.repoHash = self.repository && sha1(self.repository) || '';
     self.repoCacheLocation = path.join(
         self.cacheDir, self.repoHash
     );
