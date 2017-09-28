@@ -57,7 +57,7 @@ function shasumFiles(dir, callback) {
                 return;
             }
             if (this.key && fileFilter(this.key)) {
-                filteredFiles[this.path.join("/")] = value;
+                filteredFiles[this.path.join('/')] = value;
             }
         });
 

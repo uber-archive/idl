@@ -56,7 +56,7 @@ function thriftIdlWithIncludes(serviceName, includes) {
 function getIncludesTemplate(includes) {
     var includeTemplate = [];
     for (var i = 0; i < includes.length; i++) {
-        includeTemplate.push('include {' + i + '}')
+        includeTemplate.push('include {' + i + '}');
     }
     return template(includeTemplate.join('\n') + '\n', includes);
 }
