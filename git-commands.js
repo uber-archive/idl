@@ -28,7 +28,6 @@ var gitexec = require('./git-process.js').exec;
 module.exports.addCommitTagAndPushToOrigin = addCommitTagAndPushToOrigin;
 module.exports.addFiles = addFiles;
 module.exports.commitWithMessage = commitWithMessage;
-module.exports.timestampTag = timestampTag;
 module.exports.pushToOriginWithTags = pushToOriginWithTags;
 
 function addCommitTagAndPushToOrigin(opts, callback) {
@@ -44,7 +43,6 @@ function addCommitTagAndPushToOrigin(opts, callback) {
         removeFiles.bind(ctx, opts.deletedFiles),
         updateFiles.bind(ctx),
         commitWithMessage.bind(ctx, opts.service, opts.version),
-        timestampTag.bind(ctx, opts.service, opts.timestamp),
         pushToOriginWithTags.bind(ctx)
     ], callback);
 }
@@ -89,18 +87,8 @@ function commitWithMessage(service, version, callback) {
     }, callback);
 }
 
-function timestampTag(service, currTime, callback) {
-    var command = 'git tag ' +
-        'v' + currTime.getTime() + ' ' +
-        '-am "' + currTime.toISOString() + ' ' + service + '"';
-    gitexec(command, {
-        cwd: this.cwd,
-        logger: this.logger
-    }, callback);
-}
-
 function pushToOriginWithTags(callback) {
-    var command = 'git push origin master --tags';
+    var command = 'git push origin master';
     gitexec(command, {
         cwd: this.cwd,
         logger: this.logger,

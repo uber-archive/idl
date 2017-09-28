@@ -223,7 +223,7 @@ function IDL(opts) {
 
     self.logger = opts.logger || DebugLogtron('idl', opts.logOpts || {});
 
-    self.repoHash = sha1(self.repository);
+    self.repoHash = self.repository && sha1(self.repository) || '';
     self.repoCacheLocation = path.join(
         self.cacheDir, self.repoHash
     );
@@ -899,7 +899,7 @@ function pullRepository(cb) {
     var self = this;
 
     var cwd = self.repoCacheLocation;
-    var command = 'git fetch -depth 1 ';
+    var command = 'git fetch --depth 1 --no-tags';
     self.git(command, {
         cwd: cwd,
         ignoreStderr: true
@@ -910,7 +910,7 @@ function pullRepository(cb) {
             return cb(err);
         }
 
-        var command2 = 'git merge --ff-only origin/master';
+        var command2 = 'git reset --hard origin/master';
         self.git(command2, {
             cwd: cwd
         }, cb);
@@ -961,9 +961,9 @@ function toString() {
     function toTableEntry(remoteKey) {
         var remote = self.remotes[remoteKey];
         var local = self.localRemotes[remoteKey];
-        var localTime = local && local.time || '';
+        var localTime = local && local.time || 0;
         var age = '-';
-        if (localTime && localTime.length > 0) {
+        if (localTime > 0) {
             var color = remote.time === localTime ? 'green' : 'red';
             age = new Date(remote.time).getTime() -
                 new Date(localTime).getTime();

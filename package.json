@@ -49,7 +49,8 @@
   },
   "devDependencies": {
     "eslint": "1.8.0",
-    "eslint-config-perf-standard": "2.1.1",
+    "eslint-config-perf-standard": "^2.1.1",
+    "eslint-plugin-perf-standard": "^1.0.3",
     "fixtures-fs": "2.0.0",
     "istanbul": "^0.3.5",
     "opn": "^1.0.1",
