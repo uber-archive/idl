@@ -963,7 +963,7 @@ function toString() {
         var local = self.localRemotes[remoteKey];
         var localTime = local && local.time || 0;
         var age = '-';
-        if (localTime && localTime > 0) {
+        if (localTime > 0) {
             var color = remote.time === localTime ? 'green' : 'red';
             age = new Date(remote.time).getTime() -
                 new Date(localTime).getTime();
