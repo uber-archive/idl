@@ -331,7 +331,7 @@ This project is not done yet:
 
 ## Contributors
 
- - malandrew (Andrew de Andrade)
+ - andrewdeandrade (Andrew de Andrade)
  - Raynos (Jake Verbaten)
  - kriskowal (Kris Kowal)
  - prashantv (Prashant Varanasi)
