@@ -899,7 +899,7 @@ function pullRepository(cb) {
     var self = this;
 
     var cwd = self.repoCacheLocation;
-    var command = 'git fetch -depth 1 ';
+    var command = 'git fetch --depth 1 --no-tags';
     self.git(command, {
         cwd: cwd,
         ignoreStderr: true
@@ -910,7 +910,7 @@ function pullRepository(cb) {
             return cb(err);
         }
 
-        var command2 = 'git merge --ff-only origin/master';
+        var command2 = 'git reset --hard origin/master';
         self.git(command2, {
             cwd: cwd
         }, cb);
