@@ -1,5 +1,5 @@
 
-# v3.2.0 (unreleased)
+# v3.1.9 (2017-09-28)
 
 - Fixes a bug where IDL would fail to update the cache repository. (@dnathe4th)
 - Fixes a bug in displaying time since last IDL package sync. (@pvonr)
