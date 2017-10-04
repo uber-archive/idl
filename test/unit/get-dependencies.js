@@ -24,7 +24,7 @@ var test = require('tape');
 var path = require('path');
 var withFixtures = require('fixtures-fs');
 
-var thriftIdl = require('../lib/thrift-idl');
+var thriftIdl = require('../lib/thrift-idl').thriftIdl;
 var getDependencies = require('../../get-dependencies');
 
 var fixturesPath = path.resolve(__dirname, '../fixtures');
@@ -39,6 +39,10 @@ var fixtures = {
                         'include "../../b-team/qux/qux.thrift"',
                         'include "../../company/common/common.thrift"',
                         thriftIdl('Foo')
+                    ].join('\n'),
+                    // multiple files in the same folder
+                    'otherfoo.thrift': [
+                        'include "../../company/common/common.thrift"'
                     ].join('\n')
                 },
                 bar: {
@@ -72,7 +76,8 @@ var fixtures = {
 test('getServiceDependenciesFromIncludes',
     withFixtures(fixturesPath, fixtures, function t(assert) {
         getDependencies(
-            path.resolve(__dirname, '../fixtures/idl/github.com/a-team/foo'),
+            path.resolve(__dirname, '../fixtures/idl'),
+            'github.com/a-team/foo',
             onIncludes
         );
 
@@ -85,7 +90,8 @@ test('getServiceDependenciesFromIncludes',
                 'github.com/a-team/bar',
                 'github.com/b-team/baz',
                 'github.com/b-team/qux',
-                'github.com/company/common'
+                'github.com/company/common',
+                'github.com/company/common' // from a-team/otherthrift.thrift
             ];
 
             assert.deepEqual(serviceDependencies, expected);

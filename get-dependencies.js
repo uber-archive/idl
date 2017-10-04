@@ -73,7 +73,8 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
             var dir = this.path.slice(0, this.path.length - 1).join('/');
             var includes = parseIncludes(value);
             if (includes.length > 0) {
-                memo[dir] = [].concat(includes.map(pathToServiceName))
+                memo[dir] = (memo[dir] || [])
+                    .concat(includes.map(pathToServiceName))
                     .filter(removeUndef);
             }
         }

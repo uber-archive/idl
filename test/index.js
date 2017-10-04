@@ -22,3 +22,4 @@
 
 require('./idl-daemon.js');
 require('./idl.js');
+require('./unit/get-dependencies.js');
