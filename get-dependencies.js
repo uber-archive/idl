@@ -49,8 +49,8 @@ function getIncludes(thriftDir, service, callback) {
     }
 }
 
-function removeUndef(n) {
-    return n !== undefined;
+function removeUndefAndDupes(n, idx, currArray) {
+    return n !== undefined && n !== currArray[idx + 1];
 }
 
 function resolveAllInstalledDependencies(thriftDir, callback) {
@@ -75,7 +75,8 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
             if (includes.length > 0) {
                 memo[dir] = (memo[dir] || [])
                     .concat(includes.map(pathToServiceName))
-                    .filter(removeUndef);
+                    .sort()
+                    .filter(removeUndefAndDupes);
             }
         }
         return memo;

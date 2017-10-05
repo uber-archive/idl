@@ -99,11 +99,8 @@ test('getServiceDependenciesFromIncludes',
                 'github.com/b-team/baz',
                 'github.com/b-team/qux',
                 'github.com/company/common',
-                'github.com/company/common' // from a-team/otherthrift.thrift
             ];
 
-            expected.sort();
-            serviceDependencies.sort();
             assert.deepEqual(serviceDependencies, expected);
 
             assert.end();
