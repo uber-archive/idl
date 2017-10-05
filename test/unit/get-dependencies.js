@@ -22,6 +22,7 @@
 
 var test = require('tape');
 var path = require('path');
+var mkdirp = require('mkdirp');
 var withFixtures = require('fixtures-fs');
 
 var thriftIdl = require('../lib/thrift-idl').thriftIdl;
@@ -73,6 +74,13 @@ var fixtures = {
     }
 };
 
+test('setup', function t(assert) {
+    // race-condition in fixtures-fs can cause mkdir to fail
+    // when mkdir /fixtures/idl is called before mkdir/fixtures
+    mkdirp.sync(fixturesPath);
+    assert.end();
+});
+
 test('getServiceDependenciesFromIncludes',
     withFixtures(fixturesPath, fixtures, function t(assert) {
         getDependencies(
@@ -94,6 +102,8 @@ test('getServiceDependenciesFromIncludes',
                 'github.com/company/common' // from a-team/otherthrift.thrift
             ];
 
+            expected.sort();
+            serviceDependencies.sort();
             assert.deepEqual(serviceDependencies, expected);
 
             assert.end();
