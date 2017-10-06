@@ -49,8 +49,8 @@ function getIncludes(thriftDir, service, callback) {
     }
 }
 
-function removeUndef(n) {
-    return n !== undefined;
+function removeUndefAndDupes(n, idx, currArray) {
+    return n !== undefined && n !== currArray[idx + 1];
 }
 
 function resolveAllInstalledDependencies(thriftDir, callback) {
@@ -73,8 +73,10 @@ function resolveAllInstalledDependencies(thriftDir, callback) {
             var dir = this.path.slice(0, this.path.length - 1).join('/');
             var includes = parseIncludes(value);
             if (includes.length > 0) {
-                memo[dir] = [].concat(includes.map(pathToServiceName))
-                    .filter(removeUndef);
+                memo[dir] = (memo[dir] || [])
+                    .concat(includes.map(pathToServiceName))
+                    .sort()
+                    .filter(removeUndefAndDupes);
             }
         }
         return memo;
