@@ -35,7 +35,8 @@ function addCommitTagAndPushToOrigin(opts, callback) {
 
     var ctx = {
         cwd: opts.cwd,
-        logger: opts.logger
+        logger: opts.logger,
+        debugGit: opts.debugGit
     };
 
     series([
@@ -51,7 +52,8 @@ function addFiles(files, callback) {
     var command = 'git add ' + files.join(' ');
     gitexec(command, {
         cwd: this.cwd,
-        logger: this.logger
+        logger: this.logger,
+        debugGit: this.debugGit
     }, callback);
 }
 
@@ -62,7 +64,8 @@ function removeFiles(files, callback) {
     var command = 'git rm ' + files.join(' ');
     gitexec(command, {
         cwd: this.cwd,
-        logger: this.logger
+        logger: this.logger,
+        debugGit: this.debugGit
     }, callback);
 }
 
@@ -70,7 +73,8 @@ function updateFiles(callback) {
     var command = 'git add --update';
     gitexec(command, {
         cwd: this.cwd,
-        logger: this.logger
+        logger: this.logger,
+        debugGit: this.debugGit
     }, callback);
 }
 
@@ -83,7 +87,8 @@ function commitWithMessage(service, version, callback) {
     var command = 'git commit ' + '-m "' + message + '"';
     gitexec(command, {
         cwd: this.cwd,
-        logger: this.logger
+        logger: this.logger,
+        debugGit: this.debugGit
     }, callback);
 }
 
@@ -92,6 +97,7 @@ function pushToOriginWithTags(callback) {
     gitexec(command, {
         cwd: this.cwd,
         logger: this.logger,
+        debugGit: this.debugGit,
         ignoreStderr: true
     }, callback);
 }

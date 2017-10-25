@@ -222,6 +222,7 @@ function IDL(opts) {
     self.cwd = opts.cwd || process.cwd();
 
     self.logger = opts.logger || DebugLogtron('idl', opts.logOpts || {});
+    self.debugGit = opts.debugGit;
 
     self.repoHash = self.repository && sha1(self.repository) || '';
     self.repoCacheLocation = path.join(
@@ -786,7 +787,8 @@ function publish(cb) {
             service: service,
             timestamp: self.meta.time(),
             cwd: self.repoCacheLocation,
-            logger: self.logger
+            logger: self.logger,
+            debugGit: self.debugGit
         }, done);
 
         function getFilepath(filename) {
