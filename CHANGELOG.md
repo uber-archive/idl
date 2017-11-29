@@ -1,7 +1,9 @@
 
-# (unreleased)
+# v3.1.10 (2017-11-29)
 
-- No changes yet.
+- Addresses a bug in collecting includes from multiple IDL files in the same
+  directory. (@josiabgrace)
+- Threads --git-debug flag, so we can see git log output when debugging. (@pvonr)
 
 
 # v3.1.9 (2017-09-28)
