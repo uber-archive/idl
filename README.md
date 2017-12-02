@@ -116,7 +116,7 @@ project.
 
 Example:
 
-    $ idl fetch github.com:/foo/bar
+    $ idl fetch github.com/foo/bar
     $
 
 #### `idl update`
