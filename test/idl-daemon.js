@@ -118,6 +118,14 @@ TestCluster.test('run the idl-daemon', {
             'Correct thrift definition for D'
         );
 
+        var remotes = data.meta.remotes;
+        assert.equal(data.gittag, '' +
+            'v' + new Date(remotes['github.com/org/a'].time).getTime() + '\n' +
+            'v' + new Date(remotes['github.com/org/b'].time).getTime() + '\n' +
+            'v' + new Date(remotes['github.com/org/c'].time).getTime() + '\n' +
+            'v' + new Date(remotes['github.com/org/d'].time).getTime() + '\n'
+        );
+
         assert.end();
     }
 });
@@ -359,6 +367,18 @@ TestCluster.test('updating a remote', {
             thriftIdl('D'),
             'Correct thrift definition for D'
         );
+
+        var remotes = data.meta.remotes;
+        var tags = data.gittag.trim().split('\n');
+
+        assert.equal(tags[0], 'v' + new Date(remotes['github.com/org/a'].time)
+            .getTime());
+        assert.equal(tags[2], 'v' + new Date(remotes['github.com/org/c'].time)
+            .getTime());
+        assert.equal(tags[3], 'v' + new Date(remotes['github.com/org/d'].time)
+            .getTime());
+        assert.equal(tags[4], 'v' + new Date(remotes['github.com/org/b'].time)
+            .getTime());
 
         assert.end();
     }
