@@ -236,6 +236,9 @@ function IDL(opts) {
     self.metaFilename = 'meta.json';
     self.idlDirectory = 'idl';
 
+    // meta is the metadata captured in the IDL registry's "origin/master"
+    // idl/meta.json. This is to be distinguished from localMeta used elsewhere
+    // to capture the metadata as seen in the project's working copy.
     self.meta = null;
 
     self.getServiceName = ServiceName(self.logger);
@@ -341,6 +344,7 @@ function processArgs(cb) {
         fetchRepository
     );
 
+    // fetch and check out master branch
     function fetchRepository() {
         self.fetchRepository(onRepository);
     }
@@ -382,6 +386,8 @@ function processArgs(cb) {
     }
 }
 
+// init scaffolds a dummy IDL file in the appropriate location for the current
+// project, based on the location of the origin remote.
 function init(cb) {
     var self = this;
     var serviceName;
@@ -436,6 +442,8 @@ function init(cb) {
     }
 }
 
+// list writes a table of services in the IDL registry, whether your service
+// uses them, whether they need an update.
 function list(cb) {
     var self = this;
 
@@ -459,9 +467,22 @@ function list(cb) {
 
 }
 
-function fetchFromMeta(cb) {
+// fetch copies files from the IDL registry cache (presumed checked out at the
+// current "origin/master") into the working copy for the subtree of the
+// service name.
+//
+// If the service is not explicit, fetch is equivalent to update,
+// refetching all previously fetched services.
+function fetch(service, cb) {
+    // Precondition: "origin/master" is fetched and checked out in the IDL
+    // registry cache.
     var self = this;
 
+    if (!service) {
+        return update.call(self, cb);
+    }
+
+    // Read $PWD/idl/meta.json
     var localMeta = MetaFile({
         fileName: path.join(
             self.cwd,
@@ -470,39 +491,14 @@ function fetchFromMeta(cb) {
         )
     });
 
-    var services = Object.keys(localMeta.toJSON().remotes)
-        .map(makeFetchServiceThunk);
-
-    parallel(services, cb);
-
-    function makeFetchServiceThunk(service) {
-        return fetch.bind(self, service);
-    }
-}
-
-function fetch(service, cb) {
-    var self = this;
-
-    if (!service) {
-        return fetchFromMeta.call(self, cb);
-    }
-
-    var clientMetaFile = MetaFile({
-        fileName: path.join(
-            self.cwd,
-            self.idlDirectory,
-            self.metaFilename
-        )
-    });
-
-    clientMetaFile.readFile(onReadLocalMeta);
+    localMeta.readFile(onReadLocalMeta);
 
     function onReadLocalMeta(err) {
         if (err) {
             return cb(err);
         }
 
-        var alreadyFetched = findService(clientMetaFile.toJSON(), service);
+        var alreadyFetched = findService(localMeta.toJSON(), service);
         var existsInRegistry = findService(self.meta.toJSON(), service);
 
         if (!existsInRegistry) {
@@ -559,14 +555,14 @@ function fetch(service, cb) {
             return cb(err);
         }
 
-        clientMetaFile.readFile(onReadFile);
+        localMeta.readFile(onReadFile);
 
         function onReadFile(err2) {
             if (err2) {
                 return cb(err2);
             }
 
-            clientMetaFile.updateRecord(
+            localMeta.updateRecord(
                 service,
                 self.meta.getRecord(service),
                 onUpdatedClientMeta
@@ -578,7 +574,7 @@ function fetch(service, cb) {
         if (err) {
             return cb(err);
         }
-        clientMetaFile.save(onClientMetaSaved);
+        localMeta.save(onClientMetaSaved);
     }
 
     function onClientMetaSaved(err) {
@@ -619,7 +615,11 @@ function fetch(service, cb) {
     }
 }
 
+// show writes out the IDL files for a service, from the "master" branch of the
+// IDL registry repository.
 function show(service, cb) {
+    // Precondition: "origin/master" is fetched and checked out in the IDL
+    // registry cache.
     var self = this;
 
     if (!service) {
@@ -672,7 +672,15 @@ function getDeletedFiles(currentShasums, newShasums) {
     return files;
 }
 
+// publish writes and pushes a commit to the IDL registry, after copying the
+// IDL from your working copy's own IDL subdirectory.
+//
+// The publish command previously also cut a tag "v" + timestamp, but this
+// was superfluous and caused undue operational burden on the IDL registry git
+// repository.
 function publish(cb) {
+    // Precondition: the cache is checked out to the current "origin/master" of
+    // the IDL registry repository.
     var self = this;
     var destination;
     var source;
@@ -787,10 +795,15 @@ function publish(cb) {
     }
 }
 
+// update runs fetch for every service previously fetched and tracked in
+// idl/meta.json.
 function update(cb) {
+    // Precondition: the cache is checked out to the current "origin/master" of
+    // the IDL registry repository.
     var self = this;
 
-    var clientMetaFile = MetaFile({
+    // Read $PWD/idl/meta.json
+    var localMeta = MetaFile({
         fileName: path.join(
             self.cwd,
             self.idlDirectory,
@@ -798,14 +811,16 @@ function update(cb) {
         )
     });
 
-    clientMetaFile.readFile(onMeta);
+    localMeta.readFile(onMeta);
 
     function onMeta(err, meta) {
         if (err) {
             return cb(err);
         }
 
-        var remotes = Object.keys(clientMetaFile.toJSON().remotes);
+        // For each previously fetched service marked down in meta.json,
+        // "idl fetch" that project.
+        var remotes = Object.keys(localMeta.toJSON().remotes);
         series(remotes.map(buildThunk), onResults);
 
         function buildThunk(remote) {
@@ -824,6 +839,8 @@ function update(cb) {
     }
 }
 
+// fetchRepository is a preamble to all idl commands that ensures that the
+// cache is synced and that the master branch is checked out.
 function fetchRepository(cb) {
     var self = this;
 
@@ -858,6 +875,8 @@ function fetchRepository(cb) {
     }
 }
 
+// cloneRepository creates the initial IDL registry cache. Subsequent
+// fetchRepository calls use pullRepository instead.
 function cloneRepository(cb) {
     var self = this;
 
@@ -880,6 +899,8 @@ function cloneRepository(cb) {
     }
 }
 
+// pullRepository updates the IDL registry cache, as is the common case for
+// fetchRepository.
 function pullRepository(cb) {
     var self = this;
 
@@ -902,6 +923,9 @@ function pullRepository(cb) {
     }
 }
 
+// checkoutRef checks out the IDL registry at the given reference. In practice,
+// we only ever check out "master", but previous iterations of this tool would
+// check out versioned tags, but we found this to be superfluous.
 function checkoutRef(ref, cb) {
     var self = this;
 
@@ -913,6 +937,7 @@ function checkoutRef(ref, cb) {
     }, cb);
 }
 
+// ListText is a tool that writes the idl list table.
 function ListText(meta, localMeta) {
     if (!(this instanceof ListText)) {
         return new ListText(meta, localMeta);
@@ -984,6 +1009,11 @@ function toString() {
     }
 }
 
+// If configured in .idlrc, runs a command that ensures that subsequent git
+// commands interacting with the git registry's repository run without interactive authentication prompts.
+// This is important since these command typically run in a pty to obscure hide
+// their output and detect any interactive authentication prompts (via PAM)
+// that might open /dev/tty to avoid mucking with stdio.
 function preauth(shell, command, ignoreList, cb) {
     shell = shell || 'sh';
     command = command || 'true';
