@@ -28,7 +28,7 @@ var once = require('once');
 var extend = require('xtend');
 var setTimeout = require('timers').setTimeout;
 var clearTimeout = require('timers').clearTimeout;
-var pty = require('pty.js');
+var pty = require('node-pty');
 
 module.exports = Git;
 module.exports.exec = gitspawn;
@@ -71,7 +71,7 @@ function gitspawn(command, options, callback) {
         });
     } else {
         git = pty.spawn(commandParts.shift(), commandParts, spawnOpts);
-        git.stdout.on('data', logStdout);
+        git.on('data', logStdout);
     }
 
     function logStdout(data) {
