@@ -470,27 +470,10 @@ function fetchFromMeta(cb) {
         )
     });
 
-    localMeta.readFile(onReadLocalMeta);
+    var services = Object.keys(localMeta.toJSON().remotes)
+        .map(makeFetchServiceThunk);
 
-    function onReadLocalMeta(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        var idlVersion = localMeta.toJSON().version;
-        self.checkoutRef('v' + idlVersion, onCheckoutRegistryTag);
-    }
-
-    function onCheckoutRegistryTag(err) {
-        if (err) {
-            return cb(err);
-        }
-
-        var services = Object.keys(localMeta.toJSON().remotes)
-            .map(makeFetchServiceThunk);
-
-        parallel(services, cb);
-    }
+    parallel(services, cb);
 
     function makeFetchServiceThunk(service) {
         return fetch.bind(self, service);
