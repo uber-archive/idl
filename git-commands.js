@@ -36,7 +36,7 @@ function addCommitTagAndPushToOrigin(opts, callback) {
     var ctx = {
         cwd: opts.cwd,
         logger: opts.logger,
-        debugGit: opts.debugGit
+        debugGit: opts.debugGit,
     };
 
     series([
