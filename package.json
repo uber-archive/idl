@@ -1,6 +1,6 @@
 {
   "name": "idl",
-  "version": "3.1.11",
+  "version": "3.1.12",
   "description": "A CLI for managing thrift IDL files",
   "keywords": [],
   "contributors": [
