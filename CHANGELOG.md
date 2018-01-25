@@ -1,9 +1,15 @@
 
+# (unreleased)
+
+- No changes yet.
+
+
 # v3.1.12 (2018-01-25)
 
 - Remove dependency on a pty. We no longer need to scan the pty output
   for authentication warnings. The pty module does not support Node.js versions
   we still use, dating back to 0.10.
+
 
 # v3.1.11 (2018-01-25)
 
