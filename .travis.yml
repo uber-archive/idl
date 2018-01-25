@@ -6,6 +6,7 @@ node_js:
   - "6.11"
   - "4.1"
   - "4.0"
+  - "0.12"
 addons:
   apt:
     sources:

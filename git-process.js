@@ -28,7 +28,6 @@ var once = require('once');
 var extend = require('xtend');
 var setTimeout = require('timers').setTimeout;
 var clearTimeout = require('timers').clearTimeout;
-var pty = require('node-pty');
 
 module.exports = Git;
 module.exports.exec = gitspawn;
@@ -62,45 +61,17 @@ function gitspawn(command, options, callback) {
     );
     var git;
 
+    spawnOpts.stdio = [];
     if (options.debugGit) {
         spawnOpts.stdio = 'inherit';
-        git = spawn(commandParts.shift(), commandParts, spawnOpts);
-        git.once('error', function onError(err) {
-            handleError(err, stdout, stderr);
-            callback(err, stdout, stderr);
-        });
-    } else {
-        git = pty.spawn(commandParts.shift(), commandParts, spawnOpts);
-        git.on('data', logStdout);
     }
 
-    function logStdout(data) {
-        stdout += data;
-        if (options.twoFactorPrompt) {
-            if (options.twoFactorPrompt instanceof RegExp) {
-                if (options.twoFactorPrompt.test(data.toString())) {
-                    handleTwoFactor();
-                }
-            } else if (typeof options.twoFactorPrompt === 'string') {
-                if (data.toString().indexOf(options.twoFactorPrompt) !== -1) {
-                    handleTwoFactor();
-                }
-            }
-        }
+    git = spawn(commandParts.shift(), commandParts, spawnOpts);
 
-        function handleTwoFactor() {
-            console.error('Two Factor Authentication detected');
-            if (options.twoFactor) {
-                git.write(options.twoFactor + '\r');
-                console.error('Please check your primary 2fa device');
-                console.error('This is typically an app on your cellphone');
-                console.error('or a SMS message.');
-            } else {
-                var err = new Error('--twoFactor flag is not set');
-                return callback(err);
-            }
-        }
-    }
+    git.once('error', function onError(err) {
+        handleError(err, stdout, stderr);
+        callback(err, stdout, stderr);
+    });
 
     git.once('exit', function logExitCode(code) {
         clearTimeout(helpTimeout);
