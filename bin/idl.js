@@ -214,8 +214,9 @@ function IDL(opts) {
     self.preauthIgnore = opts.preauthIgnore || [];
     self.helpUrl = opts.helpUrl;
 
-    // List of IDLs already fetched when fetching dependencies.
-    self.fetched = [];
+    // fetching is a memo of all services that are in the process of fetching,
+    // to short-circuit recursive dependency loops.
+    self.fetching = [];
 
     self.cacheDir = opts.cacheDir ||
         path.join(HOME, '.idl', 'upstream-cache');
@@ -261,6 +262,7 @@ IDL.prototype.processArgs = processArgs;
 IDL.prototype.init = init;
 IDL.prototype.list = list;
 IDL.prototype.fetch = fetch;
+IDL.prototype.fetchOneService = fetchOneService;
 IDL.prototype.publish = publish;
 IDL.prototype.update = update;
 IDL.prototype.show = show;
@@ -289,13 +291,13 @@ function help(helpUrl, cb) {
         '                    <command> <args>',
         '',
         'Where <command> is one of:',
-        '  - init           Scaffold simple IDL file at correct path for a new service project',
-        '  - list           list service IDLs available in the registry',
-        '  - fetch <name>   fetch and update IDLs for a service and place in the current project',
-        '  - show <show>    print the IDLs for a service on stdout',
-        '  - publish        manually publish IDLs for a service to the registry',
-        '  - update         update any "installed" service IDLs to the latest versions',
-        '  - version        print the current version of `idl`'
+        '  - init            Scaffold simple IDL file at correct path for a new service project',
+        '  - list            list service IDLs available in the registry',
+        '  - fetch <service> adds a new service and updates all already fetched services',
+        '  - show <service>  print the latest IDLs for a service to stdout',
+        '  - publish         manually publish IDLs for a service to the registry',
+        '  - update          updates all previously fetched services to the latest version',
+        '  - version         print the current version of `idl`'
     ];
 
     if (helpUrl && typeof helpUrl === 'string' && helpUrl.length > 0) {
@@ -470,17 +472,41 @@ function list(cb) {
 // fetch copies files from the IDL registry cache (presumed checked out at the
 // current "origin/master") into the working copy for the subtree of the
 // service name.
+// To ensure that the idl directory is a consistent cross-section of a snapshot
+// of the IDL registry, fetch also updates all other fetched services.
 //
-// If the service is not explicit, fetch is equivalent to update,
-// refetching all previously fetched services.
+// Without a specific service, fetch just updates.
 function fetch(service, cb) {
     // Precondition: "origin/master" is fetched and checked out in the IDL
     // registry cache.
     var self = this;
 
-    if (!service) {
-        return update.call(self, cb);
+    self.update(onUpdate);
+
+    function onUpdate(err) {
+        if (err != null) {
+            return cb(err);
+        }
+
+        if (!service) {
+            return cb(null);
+        }
+
+        self.fetchOneService(service, cb);
     }
+}
+
+// fetchOneService is a utility to fetch or update a single service, used by
+// both fetch and update for updating individual services.
+function fetchOneService(service, cb) {
+    // Precondition: "origin/master" is fetched and checked out in the IDL
+    // registry cache.
+    var self = this;
+
+    if (self.fetching.indexOf(service) >= 0) {
+        return cb(null);
+    }
+    self.fetching.push(service);
 
     // Read $PWD/idl/meta.json
     var localMeta = MetaFile({
@@ -507,29 +533,6 @@ function fetch(service, cb) {
             }));
         }
 
-        if (alreadyFetched) {
-            onUpdate();
-        } else {
-            self.update(onUpdate);
-        }
-    }
-
-    function findService(json, service) {
-        var path = service.split('/');
-        for (var i = path.length; i >= 0; i--) {
-            var fetched = json.remotes[path.slice(0, i).join('/')];
-            if (fetched) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function onUpdate(err) {
-        if (err) {
-            return cb(err);
-        }
-
         var destination = path.join(
             self.cwd,
             self.idlDirectory,
@@ -548,6 +551,17 @@ function fetch(service, cb) {
             confirm: true,
             filter: common.fileFilter
         }, onCopied);
+    }
+
+    function findService(json, service) {
+        var path = service.split('/');
+        for (var i = path.length; i >= 0; i--) {
+            var fetched = json.remotes[path.slice(0, i).join('/')];
+            if (fetched) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function onCopied(err) {
@@ -605,12 +619,7 @@ function fetch(service, cb) {
 
     function makeFetcher(dependency) {
         return function fetchDependencyThunk(callback) {
-            if (self.fetched.indexOf(dependency) === -1) {
-                self.fetched.push(dependency);
-                self.fetch(dependency, callback);
-            } else {
-                callback();
-            }
+            self.fetchOneService(dependency, callback);
         };
     }
 }
@@ -824,7 +833,7 @@ function update(cb) {
         series(remotes.map(buildThunk), onResults);
 
         function buildThunk(remote) {
-            return self.fetch.bind(self, remote);
+            return self.fetchOneService.bind(self, remote);
         }
 
         function onResults(updateErr, results) {
