@@ -31,7 +31,6 @@ var mkdirp = require('mkdirp');
 var DebugLogtron = require('debug-logtron');
 var extend = require('xtend');
 var textTable = require('text-table');
-var parallel = require('run-parallel');
 var cpr = require('cpr');
 var rc = require('rc');
 var rcUtils = require('rc/lib/utils');
@@ -484,7 +483,7 @@ function fetch(service, cb) {
     self.update(onUpdate);
 
     function onUpdate(err) {
-        if (err != null) {
+        if (!err) {
             return cb(err);
         }
 
@@ -524,7 +523,6 @@ function fetchOneService(service, cb) {
             return cb(err);
         }
 
-        var alreadyFetched = findService(localMeta.toJSON(), service);
         var existsInRegistry = findService(self.meta.toJSON(), service);
 
         if (!existsInRegistry) {
@@ -1019,7 +1017,8 @@ function toString() {
 }
 
 // If configured in .idlrc, runs a command that ensures that subsequent git
-// commands interacting with the git registry's repository run without interactive authentication prompts.
+// commands interacting with the git registry's repository run without
+// interactive authentication prompts.
 // This is important since these command typically run in a pty to obscure hide
 // their output and detect any interactive authentication prompts (via PAM)
 // that might open /dev/tty to avoid mucking with stdio.
