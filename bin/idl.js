@@ -68,7 +68,8 @@ var envPrefixes = [
 
 var UnknownServiceError = TypedError({
     type: 'unknown-service',
-    message: 'The service {service} is not published in the registry',
+    message: 'The service {service} is not published in the registry.\n'+
+             'Ensure that you provide a service name and NOT the name of a specific IDL.',
     service: null
 });
 
@@ -498,15 +499,23 @@ function fetch(service, cb) {
 
 // fetchOneService is a utility to fetch or update a single service, used by
 // both fetch and update for updating individual services.
-function fetchOneService(service, cb) {
+//
+// 'remote' may not be equal to the service name.
+//
+// eg
+//  remote: foo/bar/baz.thrift
+//  service: foo/bar
+//
+// Either option is valid to prevent breaking older meta.json files.
+function fetchOneService(remote, cb) {
     // Precondition: "origin/master" is fetched and checked out in the IDL
     // registry cache.
     var self = this;
 
-    if (self.fetching.indexOf(service) >= 0) {
+    if (self.fetching.indexOf(remote) >= 0) {
         return cb(null);
     }
-    self.fetching.push(service);
+    self.fetching.push(remote);
 
     // Read $PWD/idl/meta.json
     var localMeta = MetaFile({
@@ -519,17 +528,23 @@ function fetchOneService(service, cb) {
 
     localMeta.readFile(onReadLocalMeta);
 
+    // 'service' will be set within onReadLocalMeta, but defined here
+    // to prevent passing the service name through a series of callbacks.
+    var service;
+
     function onReadLocalMeta(err) {
         if (err) {
             return cb(err);
         }
 
-        var alreadyFetched = findService(localMeta.toJSON(), service);
-        var existsInRegistry = findService(self.meta.toJSON(), service);
+        // Try to find the service name that corresponds to the remote, in
+        // the global meta.json file.
+        service = findServiceName(self.meta.toJSON(), remote);
 
-        if (!existsInRegistry) {
+        // check if the service exists in the global meta
+        if (!service) {
             cb(UnknownServiceError({
-                service: service
+                service: remote
             }));
         }
 
@@ -553,12 +568,22 @@ function fetchOneService(service, cb) {
         }, onCopied);
     }
 
-    function findService(json, service) {
-        var path = service.split('/');
+    // findServiceName takes in a 'remote' and returns the corresponding
+    // service name. This behaviour is required for backwards compatability.
+    //
+    // ie
+    //  remote: foo/bar/baz.thrift
+    //  service: foo/bar
+    //
+    // Returns the service name.
+    function findServiceName(meta, remote) {
+        var path = remote.split('/');
         for (var i = path.length; i >= 0; i--) {
-            var fetched = json.remotes[path.slice(0, i).join('/')];
-            if (fetched) {
-                return true;
+            var service = path.slice(0, i).join('/');
+
+            // var fetched = meta.remotes[service];
+            if (service in meta.remotes) {
+                return service;
             }
         }
         return false;

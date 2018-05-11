@@ -1,8 +1,9 @@
 
 # (unreleased)
 
-- No changes yet.
-
+- Prevent users from using `fetch` on an IDL file, instead of a service name.
+  This fixes a silent failure that would prevent updates after reading the IDL
+  entry in `meta.json`.
 
 # v3.1.12 (2018-01-25)
 
