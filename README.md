@@ -197,7 +197,7 @@ All services and clients will have a `./idl/` directory at the root of
 the repo. All thrift IDL files are contained in this directory.
 
 Service authors need to understand how this directory is organized and
-should only every edit/modify the thrift IDL files for the service in
+should only ever edit/modify the thrift IDL files for the service in
 question. Client authors should never have to edit/modify files in this
 directory and should only use the files contained therein as references
 for the interfaces they are consuming.
@@ -221,13 +221,13 @@ or
 
 The idl directory for your service mirrors these two addresses.
 Assuming the output above, the idl path for the service
-being authoring will be `./idl/github.com/uber/foo-service/`.
+being authored will be `./idl/github.com/uber/foo-service/`.
 This directory will contain the thrift IDL files that will be
 published to your idl registry repo when `idl publish`
 is executed. The IDL files in this particular sub-directory are to be
 manually managed by service authors.
 
-All other directories are contain service defitions for services being
+All other directories contain service defitions for services being
 consumed and should not be edited/modified and should only be
 consulted as a reference when looking up a type definition for a
 service or a function definition for a service being consumed.
