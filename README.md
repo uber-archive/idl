@@ -1,3 +1,5 @@
+**(This project is no longer under active development.)**
+
 # idl
 
 [![build status][build-png]][build]
