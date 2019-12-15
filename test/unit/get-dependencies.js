@@ -98,7 +98,7 @@ test('getServiceDependenciesFromIncludes',
                 'github.com/a-team/bar',
                 'github.com/b-team/baz',
                 'github.com/b-team/qux',
-                'github.com/company/common',
+                'github.com/company/common'
             ];
 
             assert.deepEqual(serviceDependencies, expected);
